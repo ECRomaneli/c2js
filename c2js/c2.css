@@ -1,0 +1,17 @@
+
+[c2js~=fullscreen], [c2js] video {
+    /* Fit */
+    width: 100%;
+    height: 100%;
+}
+
+[c2js~=fullscreen] {
+    /* Force display settings */
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    /* Force show on top */
+    z-index: 2147483647;
+}
