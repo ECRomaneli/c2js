@@ -104,6 +104,6 @@ button[c2-fullscreen=true] {
     background-image: url(img/256/fullscreen-on.png);
 }
 
-button[c2-blank=menu] {
+button[c2-custom=menu] {
     background-image: url(img/256/menu.png);
 }

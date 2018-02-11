@@ -6,7 +6,7 @@ $['c2js'] = function (config) {
 let 
 
 info = {
-    appName: 'c2js',
+    appName: 'C2JS',
     navPrefix: null,
     fullscreen: null,
     customSeek: {},
@@ -53,10 +53,10 @@ engine = function () {
 
     // Defines which binder to call
     propertyController = function ($control, properties) {
-        $control = $control.not('[c2-status]');
+        $control = $control.not('[c2-null]');
         forEach(properties, (prop, propValue) => {
-            if      (prop === 'video')  {bindVideo($control, propValue); }
-            else if (prop === 'events') {bindEvents($control, propValue); }
+            if      (prop === 'events') {bindEvents($control, propValue); }
+            else if (prop === 'video')  {bindVideo($control, propValue); }
             else if (prop === 'ready')  {bindReady($control, propValue); }
         });
     },
@@ -372,7 +372,7 @@ engine = function () {
             },
 
             video: {
-                durationchange: function () {
+                'durationchange ended': function () {
                     c2setAll('stop', true);
                 },
                 play: function () {
@@ -578,10 +578,7 @@ engine = function () {
             },
             
             video: {
-                durationchange: () => eachAll('volumeSeek', function () {
-                    getHelpers('volumeSeek').setSeek.apply(this);
-                }),
-                volumechange: () => eachAll('volumeSeek', function () {
+                'durationchange volumechange': () => eachAll('volumeSeek', function () {
                     getHelpers('volumeSeek').setSeek.apply(this);
                 })
             }
@@ -691,7 +688,7 @@ engine = function () {
             },
             
             events: {
-                mousemove: function (e) {
+                mousemove: function () {
                     let hideMouse = this.c2HideMouse;
                     
                     if (!hideMouse.timer) {hideMouse.isMoving(true); }
@@ -702,7 +699,7 @@ engine = function () {
             }
 
         },
-        blank: {},
+        custom: {},
     };
 
     initControls();
