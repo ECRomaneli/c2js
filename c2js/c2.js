@@ -3,7 +3,7 @@
 $['c2js'] = function (config) {
 
 // All c2js global variables
-let 
+var 
 
 info = {
     appName: 'C2JS',
@@ -11,8 +11,12 @@ info = {
     fullscreen: null,
     customSeek: {},
     keymap: {
-        space: ' ',
-        esc: 'escape'
+        space:  [' '                    ],
+        esc:    ['esc',     'escape'    ],
+        right:  ['right',   'arrowright'],
+        down:   ['down',    'arrowdown' ],
+        left:   ['left',    'arrowleft' ],
+        up:     ['up',      'arrowup'   ]
     }
 },
 
@@ -31,7 +35,7 @@ start = function (query) {
 */
 engine = function () {
 
-    let 
+    var 
 
     $c2js = $(this),
     c2js = $c2js[0],
@@ -54,7 +58,7 @@ engine = function () {
     // Defines which binder to call
     propertyController = function ($control, properties) {
         $control = $control.not('[c2-null]');
-        forEach(properties, (prop, propValue) => {
+        forEach(properties, function (prop, propValue) {
             if      (prop === 'events') {bindEvents($control, propValue); }
             else if (prop === 'video')  {bindVideo($control, propValue); }
             else if (prop === 'ready')  {bindReady($control, propValue); }
@@ -63,14 +67,14 @@ engine = function () {
 
     // Bind control events inside video events
     bindVideo = function ($callers, events) {
-        forEach(events, (event, handler) => {
+        forEach(events, function (event, handler) {
             $video.on(event, handler);
         });
     },
 
     // Bind control events
     bindEvents = function ($callers, events) {
-        forEach(events, (event, handler) => $callers.on(event, handler));
+        forEach(events, function (event, handler) {$callers.on(event, handler); });
     },
 
     // Bind some actions on DOM Ready
@@ -81,17 +85,18 @@ engine = function () {
     // Write shortcut on cache
     addShortcuts = function ($control) {
         $control.each(function () {
-            let keys = $(this).attr('c2-shortcuts');
+            var elem = this, keys = $(this).attr('c2-shortcuts'), keymap;
             if (!keys) {return null; }
 
-            keys.split(' ').forEach(key => {
+            keys.split(' ').forEach(function (key) {
                 key = key.toLowerCase();
-
-                if (info.keymap[key]) {
-                    key = info.keymap[key];
+                if (keymap = info.keymap[key]) {
+                    keymap.forEach(function (key) {
+                        cache.shortcuts[key] = elem;
+                    });                    
+                } else {
+                    cache.shortcuts[key] = elem;
                 }
-
-                cache.shortcuts[key] = this;
             });
         });
     },
@@ -99,10 +104,12 @@ engine = function () {
     // Bind shortcut on c2js keydown event
     bindShortcuts = function () {
         if (!cache.shortcuts) {return null; }
-
+        console.log(cache.shortcuts);
         $c2js.keydown(function (e) {
-            let element, key = e.key.toLowerCase();
+            var element, key = e.key.toLowerCase();
+            console.log(key);
             if (element = cache.shortcuts[key]) {
+                console.log(element);
                 $(element).trigger('click');
             }
         });
@@ -146,7 +153,7 @@ engine = function () {
 
         // Find all controls on c2js instance
         forEach(controls, function(controlName, prop) {
-            let controlType = getValue(prop.type, controlName),
+            var controlType = getValue(prop.type, controlName),
                 $control = searchControl(controlType);
 
             if ($control) {
@@ -171,20 +178,22 @@ engine = function () {
     // Helpers
 
     // get value or default
-    getValue = (value, defaultValue) => value ? value : defaultValue,
+    getValue = function (value, defaultValue) {return value ? value : defaultValue; },
 
     // forEach (heavy :<) to get key and value
     forEach = function (object, iterator) {
-        Object.keys(object).forEach(key => iterator(key, object[key]));
+        Object.keys(object).forEach(function (key) {iterator(key, object[key]); });
     },
 
     // toggle values passed by param
-    toggleValue = (value, toggle) => toggle[value === toggle[0] ? 1 : 0],
+    toggleValue = function (value, toggle) {return toggle[value === toggle[0] ? 1 : 0]; },
 
     // Get value, min or max if overflow
-    getMinMax = (value, min, max) =>    value < min ? min :
-                                        value > max ? max :
-                                        value,
+    getMinMax = function (value, min, max) {
+        return  value < min ? min :
+                value > max ? max :
+                value;
+    },
 
     setAttrIfNotExists = function (elem, attr, value) {
         if (!$(elem).attr(attr)) {
@@ -193,10 +202,10 @@ engine = function () {
     },
 
     addInfo = function (add) {
-        let info = $c2js.attr('c2js'),
+        var info = $c2js.attr('c2js'),
             addString = '';
 
-        add.forEach(status => {
+        add.forEach(function (status) {
             if (info.indexOf(status) !== -1) {
                 console.info('Trying to add duplicated info: ' + status + '.');
                 return false;
@@ -209,7 +218,7 @@ engine = function () {
     },
 
     rmInfo = function (rm) {
-        let info = $c2js.attr('c2js'),
+        var info = $c2js.attr('c2js'),
             rmRegExp = new RegExp('\\s?(' + rm.join("|") + ')');
 
         info = info.replace(rmRegExp, '');
@@ -218,7 +227,7 @@ engine = function () {
 
     // get/set attribute
     c2 = function (control, controlName, value) {
-        let type = getType(controlName);
+        var type = getType(controlName);
 
         if (value === undefined) {
             return $(control).attr('c2-' + type);
@@ -238,10 +247,10 @@ engine = function () {
 
     // Get any attribute value by type
     c2getAny = function (controlName) {
-        let $all = getAll(controlName);
+        var $all = getAll(controlName);
         if (!$all.length) {return ''; }
 
-        let type = getType(controlName);             
+        var type = getType(controlName);             
         return $($all[0]).attr('c2-' + type);
     },
 
@@ -249,7 +258,7 @@ engine = function () {
     getDetailedNumber = function (number, typeTo, total) {
         if (!number) {number = 0; }
         
-        let match = (number + '').match(/^(\D*)(\d|\.)+(\D*)$/),
+        var match = (number + '').match(/^(\D*)(\d|\.)+(\D*)$/),
             result = {signal: match[1], type: match[3]},
             param = result.type === '%' ? total : typeTo;
 
@@ -267,7 +276,7 @@ engine = function () {
             return value.number * typeToOrTotal / 100;
         }
 
-        let types = ['ms', 's', 'm', 'h', 'd'],
+        var types = ['ms', 's', 'm', 'h', 'd'],
             values = [  1000,  60,  60,  24  ],
             indexFrom = types.indexOf(value.type),
             indexTo = types.indexOf(typeToOrTotal);
@@ -285,7 +294,7 @@ engine = function () {
 
     // Convert seconds to format HH:mm:ss
     convertTime = function (seconds) {
-        let date = new Date(null),
+        var date = new Date(null),
             ISORange = [11, 8];
         date.setSeconds(seconds);
         
@@ -300,7 +309,7 @@ engine = function () {
     allowFullscreen = function () {
         if (info.fullscreen) {return info.fullscreen.allowed; }
 
-        let fns = false, FS_ENTER = 0, FS_LEAVE = 1, FS_CHECK = 2;
+        var fns = false, FS_ENTER = 0, FS_LEAVE = 1, FS_CHECK = 2;
 
         if (document.webkitFullscreenEnabled) {
 
@@ -328,12 +337,12 @@ engine = function () {
             info.fullscreen = {
                 allowed: true,
                 last: null,
-                enter: e => {
+                enter: function (e) {
                     e[fns[FS_ENTER]]();
                     info.fullscreen.last = e;
                 },
-                leave: () => document[fns[FS_LEAVE]](),
-                check: () => document[fns[FS_CHECK]],
+                leave: function () {document[fns[FS_LEAVE]](); },
+                check: function () {document[fns[FS_CHECK]]; },
             };
         }
 
@@ -385,7 +394,7 @@ engine = function () {
 
             events: {
                 click: function () {
-                    let max = video.duration,
+                    var max = video.duration,
                         details = getDetailedNumber(c2(this, 'move'), 's', max),
                         time = details.number;
 
@@ -402,7 +411,7 @@ engine = function () {
 
             events: {
                 click: function () {
-                    let details = getDetailedNumber(c2(this, 'volume'), null, 1),
+                    var details = getDetailedNumber(c2(this, 'volume'), null, 1),
                         volume = details.number;
 
                     if (details.signal) {
@@ -424,7 +433,7 @@ engine = function () {
 
             video: {
                 volumechange: function () {
-                    let muted = video.volume === 0 || video.muted;
+                    var muted = video.volume === 0 || video.muted;
                     c2setAll('mute', muted);
                 }
             }
@@ -434,7 +443,7 @@ engine = function () {
 
             helpers: {
                 setFullscreenEvents: function () {
-                    let fs = info.fullscreen,
+                    var fs = info.fullscreen,
                         fsChange = info.navPrefix + 'fullscreenchange',
                         fsError = info.navPrefix + 'fullscreenerror';
 
@@ -466,7 +475,7 @@ engine = function () {
 
             events: {
                 click: function () {
-                    let fs = info.fullscreen;
+                    var fs = info.fullscreen;
                     if (!fs.allowed) {return null; }
                     fs.check() ? fs.leave() : fs.enter(c2js);
                 }
@@ -478,7 +487,7 @@ engine = function () {
             helpers: {
 
                 getValue: function (e) {
-                    let pos = e.pageX - $(this).offset().left;
+                    var pos = e.pageX - $(this).offset().left;
                     return getMinMax(pos / $(this).width(), 0, 1);
                 },
 
@@ -489,7 +498,7 @@ engine = function () {
                 },
 
                 mouseMove: function (e) {
-                    let pos = e.pageX - $(this).offset().left,
+                    var pos = e.pageX - $(this).offset().left,
                         pct = getMinMax(pos / $(this).width(), 0, 1);
                     vid.currentTime = vid.duration * pct;
                 },
@@ -516,11 +525,11 @@ engine = function () {
 
             helpers: {
                 setTime: function () {
-                    let value = $(this).val(), max = $(this).attr('max');
+                    var value = $(this).val(), max = $(this).attr('max');
                     video.currentTime = video.duration * value / max;
                 },
                 setSeek: function () {
-                    let max = $(this).attr('max');
+                    var max = $(this).attr('max');
                     $(this).val(video.currentTime * max / video.duration);
                 }
             },
@@ -578,17 +587,18 @@ engine = function () {
             },
             
             video: {
-                'durationchange volumechange': () => eachAll('volumeSeek', function () {
-                    getHelpers('volumeSeek').setSeek.apply(this);
-                })
+                'durationchange volumechange': function () {
+                    eachAll('volumeSeek', function () {
+                        getHelpers('volumeSeek').setSeek.apply(this);
+                    });
+                }
             }
-
         },
         time: {
 
             helpers: {
                 updateTime: function () {
-                    let time = video.currentTime, prefix = '';
+                    var time = video.currentTime, prefix = '';
                         
                     if ($(this).attr('c2-time') === 'remaining') {
                         time = video.duration - video.currentTime;  
@@ -607,23 +617,25 @@ engine = function () {
             },
 
             video: {
-                timeupdate: () => eachAll('time', getHelpers('time').updateTime)
+                timeupdate: function () {eachAll('time', getHelpers('time').updateTime); }
             }
 
         },
         duration: {
             
             video: {
-                durationchange: () => eachAll('duration', function () {
-                    let time = video.duration,
-                    attr = $(this).attr('c2-duration');
+                durationchange: function () {
+                    eachAll('duration', function () {
+                        var time = video.duration,
+                        attr = $(this).attr('c2-duration');
 
-                    if (attr) {
-                        $(this).attr(attr, convertTime(time));
-                        return;
-                    }
-                    $(this).text(convertTime(time));
-                })
+                        if (attr) {
+                            $(this).attr(attr, convertTime(time));
+                            return;
+                        }
+                        $(this).text(convertTime(time));
+                    })
+                }
             }
 
         },
@@ -645,7 +657,7 @@ engine = function () {
 
             events: {
                 click: function () {
-                    let min = 0,
+                    var min = 0,
                         max = 3,
                         details = getDetailedNumber(c2(this, 'speed'), null, 1),
                         speed = details.number;
@@ -667,29 +679,30 @@ engine = function () {
             type: 'hide-mouse',
             
             ready: function () {
+                var elem = this;
                 this['c2HideMouse'] = {
                     id: null,
                     timer: null,
-                    isMoving: (status) => {
-                        let hm = this.c2HideMouse,
-                            timer = $(this).attr('c2-hide-mouse');
+                    isMoving: function (status) {
+                        var hm = elem.c2HideMouse,
+                            timer = $(elem).attr('c2-hide-mouse');
                         
                         if (!status) {
                             hm.timer = null;
-                            $(this).css('cursor', 'none');
+                            $(elem).css('cursor', 'none');
                             return;
                         }
                         
                         hm.timer = timer ? getDetailedNumber(timer, 'ms').number : 3000;
-                        $(this).css('cursor', '');
+                        $(elem).css('cursor', '');
                     },
-                    timeout: () => this.c2HideMouse.isMoving(false)
+                    timeout: function () {elem.c2HideMouse.isMoving(false); }
                 };
             },
             
             events: {
                 mousemove: function () {
-                    let hideMouse = this.c2HideMouse;
+                    var hideMouse = this.c2HideMouse;
                     
                     if (!hideMouse.timer) {hideMouse.isMoving(true); }
                     
@@ -706,10 +719,8 @@ engine = function () {
 };
 
 // Start on DOM Ready
-$(() => start('[c2js]'));
+$(function () {start('[c2js]'); });
 
 };
 
-$.c2js({
-
-});
+$.c2js();
