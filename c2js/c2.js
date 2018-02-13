@@ -1,9 +1,9 @@
-/* global $ */
+/*global $, this*/
 
 $['c2js'] = function (config) {
-
-// All c2js global variables
-var 
+'use strict';
+// All c2js global letiables
+let
 
 info = {
     appName: 'C2JS',
@@ -21,7 +21,7 @@ info = {
 },
 
 /*
-    * Start all c2js found
+* Start all c2js found
 */
 start = function (query) {
     // Call engine to all c2js found
@@ -31,18 +31,18 @@ start = function (query) {
 },
 
 /*
-    * Configure control and video events
+* Configure control and video events
 */
 engine = function () {
 
-    var 
+    let
 
     $c2js = $(this),
     c2js = $c2js[0],
     $video = $($c2js.find('video, audio, iframe')),
     video = $video[0],
 
-    // All c2js instance variables
+    // All c2js instance letiables
     cache = {
         time: {
             seeking: null
@@ -85,7 +85,7 @@ engine = function () {
     // Write shortcut on cache
     addShortcuts = function ($control) {
         $control.each(function () {
-            var elem = this, keys = $(this).attr('c2-shortcuts'), keymap;
+            let elem = this, keys = $(elem).attr('c2-shortcuts'), keymap;
             if (!keys) {return null; }
 
             keys.split(' ').forEach(function (key) {
@@ -93,7 +93,7 @@ engine = function () {
                 if (keymap = info.keymap[key]) {
                     keymap.forEach(function (key) {
                         cache.shortcuts[key] = elem;
-                    });                    
+                    });
                 } else {
                     cache.shortcuts[key] = elem;
                 }
@@ -104,12 +104,9 @@ engine = function () {
     // Bind shortcut on c2js keydown event
     bindShortcuts = function () {
         if (!cache.shortcuts) {return null; }
-        console.log(cache.shortcuts);
         $c2js.keydown(function (e) {
-            var element, key = e.key.toLowerCase();
-            console.log(key);
+            let element, key = e.key.toLowerCase();
             if (element = cache.shortcuts[key]) {
-                console.log(element);
                 $(element).trigger('click');
             }
         });
@@ -153,11 +150,11 @@ engine = function () {
 
         // Find all controls on c2js instance
         forEach(controls, function(controlName, prop) {
-            var controlType = getValue(prop.type, controlName),
+            let controlType = getValue(prop.type, controlName),
                 $control = searchControl(controlType);
 
             if ($control) {
-                // Register all controls of the type on $all variable
+                // Register all controls of the type on $all letiable
                 controls[controlName]['$all'] = $control;
 
                 // Register events
@@ -202,36 +199,38 @@ engine = function () {
     },
 
     addInfo = function (add) {
-        var info = $c2js.attr('c2js'),
+        let statuses = $c2js.attr('c2js'),
             addString = '';
 
         add.forEach(function (status) {
-            if (info.indexOf(status) !== -1) {
-                console.info('Trying to add duplicated info: ' + status + '.');
+            if (statuses.indexOf(status) !== -1) {
+                console.info('Trying to add duplicated statuses: ' + status + '.');
                 return false;
             }
             addString += ' ' + status;
         });
 
-        info += addString;
-        $c2js.attr('c2js', info.trim());
+        statuses += addString;
+        $c2js.attr('c2js', statuses.trim());
     },
 
     rmInfo = function (rm) {
-        var info = $c2js.attr('c2js'),
+        let statused = $c2js.attr('c2js'),
             rmRegExp = new RegExp('\\s?(' + rm.join("|") + ')');
 
-        info = info.replace(rmRegExp, '');
-        $c2js.attr('c2js', info.trim());
+        statused = statused.replace(rmRegExp, '');
+        $c2js.attr('c2js', statused.trim());
     },
 
     // get/set attribute
     c2 = function (control, controlName, value) {
-        var type = getType(controlName);
+        let type = getType(controlName);
 
         if (value === undefined) {
             return $(control).attr('c2-' + type);
-        }else if (value === true) {
+        }
+
+        if (value === true) {
             addInfo([type]);
         } else if (value === false) {
             rmInfo([type]);
@@ -247,18 +246,16 @@ engine = function () {
 
     // Get any attribute value by type
     c2getAny = function (controlName) {
-        var $all = getAll(controlName);
+        let $all = getAll(controlName);
         if (!$all.length) {return ''; }
-
-        var type = getType(controlName);             
-        return $($all[0]).attr('c2-' + type);
+        return $($all[0]).attr('c2-' + getType(controlName));
     },
 
     // Get details of the number and convert if needed (not very suggestive)
     getDetailedNumber = function (number, typeTo, total) {
         if (!number) {number = 0; }
-        
-        var match = (number + '').match(/^(\D*)(\d|\.)+(\D*)$/),
+
+        let match = (number + '').match(/^(\D*)(\d|\.)+(\D*)$/),
             result = {signal: match[1], type: match[3]},
             param = result.type === '%' ? total : typeTo;
 
@@ -276,7 +273,7 @@ engine = function () {
             return value.number * typeToOrTotal / 100;
         }
 
-        var types = ['ms', 's', 'm', 'h', 'd'],
+        let types = ['ms', 's', 'm', 'h', 'd'],
             values = [  1000,  60,  60,  24  ],
             indexFrom = types.indexOf(value.type),
             indexTo = types.indexOf(typeToOrTotal);
@@ -294,10 +291,10 @@ engine = function () {
 
     // Convert seconds to format HH:mm:ss
     convertTime = function (seconds) {
-        var date = new Date(null),
+        let date = new Date(null),
             ISORange = [11, 8];
         date.setSeconds(seconds);
-        
+
         if (seconds < 3600) {
             ISORange = [14, 5];
         }
@@ -309,28 +306,20 @@ engine = function () {
     allowFullscreen = function () {
         if (info.fullscreen) {return info.fullscreen.allowed; }
 
-        var fns = false, FS_ENTER = 0, FS_LEAVE = 1, FS_CHECK = 2;
+        let fns = false, FS_ENTER = 0, FS_LEAVE = 1, FS_CHECK = 2;
 
         if (document.webkitFullscreenEnabled) {
-
             info.navPrefix = 'webkit';
             fns = ['webkitRequestFullscreen', 'webkitExitFullscreen', 'webkitFullscreenElement'];
-
         } else if (document.mozFullScreenEnabled) {
-
             info.navPrefix = 'moz';
             fns = ['mozRequestFullScreen', 'mozCancelFullScreen', 'mozFullScreenElement'];
-
         } else if (document.msFullscreenEnabled) {
-            
             info.navPrefix = 'ms';
             fns = ['msRequestFullscreen', 'msExitFullscreen', 'msFullscreenElement'];
-
         } else if (document.fullscreenEnabled) {
-
             info.navPrefix = '';
             fns = ['requestFullscreen', 'exitFullscreen', 'fullscreenElement'];
-
         } else {info.fullscreen = {allowed: false}; }
 
         if (fns) {
@@ -342,7 +331,7 @@ engine = function () {
                     info.fullscreen.last = e;
                 },
                 leave: function () {document[fns[FS_LEAVE]](); },
-                check: function () {document[fns[FS_CHECK]]; },
+                check: function () {return document[fns[FS_CHECK]]; }
             };
         }
 
@@ -394,7 +383,7 @@ engine = function () {
 
             events: {
                 click: function () {
-                    var max = video.duration,
+                    let max = video.duration,
                         details = getDetailedNumber(c2(this, 'move'), 's', max),
                         time = details.number;
 
@@ -411,7 +400,7 @@ engine = function () {
 
             events: {
                 click: function () {
-                    var details = getDetailedNumber(c2(this, 'volume'), null, 1),
+                    let details = getDetailedNumber(c2(this, 'volume'), null, 1),
                         volume = details.number;
 
                     if (details.signal) {
@@ -433,7 +422,7 @@ engine = function () {
 
             video: {
                 volumechange: function () {
-                    var muted = video.volume === 0 || video.muted;
+                    let muted = video.volume === 0 || video.muted;
                     c2setAll('mute', muted);
                 }
             }
@@ -443,7 +432,7 @@ engine = function () {
 
             helpers: {
                 setFullscreenEvents: function () {
-                    var fs = info.fullscreen,
+                    let fs = info.fullscreen,
                         fsChange = info.navPrefix + 'fullscreenchange',
                         fsError = info.navPrefix + 'fullscreenerror';
 
@@ -475,7 +464,7 @@ engine = function () {
 
             events: {
                 click: function () {
-                    var fs = info.fullscreen;
+                    let fs = info.fullscreen;
                     if (!fs.allowed) {return null; }
                     fs.check() ? fs.leave() : fs.enter(c2js);
                 }
@@ -486,9 +475,9 @@ engine = function () {
 
             helpers: {
 
-                getValue: function (e) {
-                    var pos = e.pageX - $(this).offset().left;
-                    return getMinMax(pos / $(this).width(), 0, 1);
+                getValue: function (e, elem) {
+                    let pos = e.pageX - $(elem).offset().left;
+                    return getMinMax(pos / $(elem).width(), 0, 1);
                 },
 
                 setValue: function (fn) {fn.apply(this); },
@@ -498,7 +487,7 @@ engine = function () {
                 },
 
                 mouseMove: function (e) {
-                    var pos = e.pageX - $(this).offset().left,
+                    let pos = e.pageX - $(this).offset().left,
                         pct = getMinMax(pos / $(this).width(), 0, 1);
                     vid.currentTime = vid.duration * pct;
                 },
@@ -525,11 +514,11 @@ engine = function () {
 
             helpers: {
                 setTime: function () {
-                    var value = $(this).val(), max = $(this).attr('max');
+                    let value = $(this).val(), max = $(this).attr('max');
                     video.currentTime = video.duration * value / max;
                 },
                 setSeek: function () {
-                    var max = $(this).attr('max');
+                    let max = $(this).attr('max');
                     $(this).val(video.currentTime * max / video.duration);
                 }
             },
@@ -585,7 +574,7 @@ engine = function () {
                     getHelpers('volumeSeek').setVolume.apply(this);
                 }
             },
-            
+
             video: {
                 'durationchange volumechange': function () {
                     eachAll('volumeSeek', function () {
@@ -598,13 +587,13 @@ engine = function () {
 
             helpers: {
                 updateTime: function () {
-                    var time = video.currentTime, prefix = '';
-                        
+                    let time = video.currentTime, prefix = '';
+
                     if ($(this).attr('c2-time') === 'remaining') {
-                        time = video.duration - video.currentTime;  
+                        time = video.duration - video.currentTime;
                         prefix = '-';
                     }
-                    
+
                     $(this).text(prefix + convertTime(time));
                 }
             },
@@ -622,11 +611,11 @@ engine = function () {
 
         },
         duration: {
-            
+
             video: {
                 durationchange: function () {
                     eachAll('duration', function () {
-                        var time = video.duration,
+                        let time = video.duration,
                         attr = $(this).attr('c2-duration');
 
                         if (attr) {
@@ -634,7 +623,7 @@ engine = function () {
                             return;
                         }
                         $(this).text(convertTime(time));
-                    })
+                    });
                 }
             }
 
@@ -657,16 +646,14 @@ engine = function () {
 
             events: {
                 click: function () {
-                    var min = 0,
+                    let min = 0,
                         max = 3,
                         details = getDetailedNumber(c2(this, 'speed'), null, 1),
                         speed = details.number;
 
                     if (details.signal) {
                         speed += video.playbackRate;
-                        speed = speed > max ? max : 
-                                speed < min ? min : 
-                                speed;
+                        speed = getMinMax(speed, min, max);
                     }
 
                     video.playbackRate = speed;
@@ -675,44 +662,44 @@ engine = function () {
 
         },
         hideMouse: {
-            
+
             type: 'hide-mouse',
-            
+
             ready: function () {
-                var elem = this;
+                let elem = this;
                 this['c2HideMouse'] = {
                     id: null,
                     timer: null,
                     isMoving: function (status) {
-                        var hm = elem.c2HideMouse,
+                        let hm = elem.c2HideMouse,
                             timer = $(elem).attr('c2-hide-mouse');
-                        
+
                         if (!status) {
                             hm.timer = null;
                             $(elem).css('cursor', 'none');
                             return;
                         }
-                        
+
                         hm.timer = timer ? getDetailedNumber(timer, 'ms').number : 3000;
                         $(elem).css('cursor', '');
                     },
                     timeout: function () {elem.c2HideMouse.isMoving(false); }
                 };
             },
-            
+
             events: {
                 mousemove: function () {
-                    var hideMouse = this.c2HideMouse;
-                    
+                    let hideMouse = this.c2HideMouse;
+
                     if (!hideMouse.timer) {hideMouse.isMoving(true); }
-                    
+
                     if (hideMouse.id) {clearTimeout(hideMouse.id); }
                     hideMouse.id = setTimeout(hideMouse.timeout, hideMouse.timer);
                 }
             }
 
         },
-        custom: {},
+        custom: {}
     };
 
     initControls();
