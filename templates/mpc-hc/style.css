@@ -9,8 +9,7 @@
     cursor: default;
 }
 
-.c2-bar:hover,
-.c2-bar:active {
+.c2-bar:hover {
     opacity: 1;
 }
 
@@ -86,11 +85,19 @@ button[c2-stop] {
 }
 
 button[c2-move^='-'] {
+    background-position: calc(-32px * 4) 0;   
+}
+
+button[c2-speed^='-'] {
     background-position: calc(-32px * 5) 0;   
 }
 
-button[c2-move^='+'] {
+button[c2-speed^='+'] {
     background-position: calc(-32px * 6) 0;   
+}
+
+button[c2-move^='+'] {
+    background-position: calc(-32px * 7) 0;   
 }
 
 button[c2-mute] {

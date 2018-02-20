@@ -35,16 +35,19 @@
     <body>
         <div c2js>
             <video src="../../sample.mp4" c2-play c2-hide-mouse='1000'></video>
+            
             <div class="c2-bar">
                 <div class="c2-controls">
-                    <input c2-time-seek type="range">
-                    
+                    <input type="range" c2-time-seek>
+
                     <button c2-play c2-shortcuts='space'></button>
                     <button c2-stop></button>
                     
                     <div class="c2-divider"></div>
                     
                     <button c2-move='-5' c2-shortcuts='a left'></button>
+                    <button c2-speed='-0.25'></button>
+                    <button c2-speed='+0.25'></button>
                     <button c2-move='+5' c2-shortcuts='d right'></button>
                     
                     <div class="c2-divider"></div>
@@ -55,7 +58,7 @@
                     
                     <div class="c2-align-right">
                         <button c2-mute c2-shortcuts='m'></button>
-                        <input c2-volume-seek type="range">
+                        <input type="range" c2-volume-seek>
                         <input type="hidden" c2-volume='-5%' c2-shortcuts='s down'>
                         <input type="hidden" c2-volume='+5%' c2-shortcuts='w up'>
                     </div>

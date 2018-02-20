@@ -30,8 +30,8 @@
         <script type="text/javascript" src="../../c2js/c2.js"></script>
 
         <!-- C2 Theme -->
-        <link rel="stylesheet" href="mobile.css" type="text/css" />
-        <script type="text/javascript" src="mobile.js"></script>
+        <link rel="stylesheet" href="style.css" type="text/css" />
+        <script type="text/javascript" src="style.js"></script>
     </head>
     <body>
 
@@ -53,16 +53,8 @@
                     <button c2-volume='-10%' c2-shortcuts='down'></button>
                     <button c2-fullscreen c2-shortcuts='f enter'></button>
                 </div>
-                <style>
-                    .c2-footer * {
-                        width: 15%;
-                        text-align: center;
-                    }
-                </style>
                 <div class="c2-footer c2-row">
-                    <span c2-time='current'>00:00</span>
-                    <input c2-time-seek type="range">
-                    <span c2-duration>00:00</span>
+                    <input c2-time-seek type="range" max="100" step="0.1" value='0'>
                 </div>
             </div>
         </div>
