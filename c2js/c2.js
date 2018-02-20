@@ -1,23 +1,37 @@
-/* global $ */
+/*global $, this*/
 
 $['c2js'] = function (config) {
+'use strict';
 
 // All c2js global variables
-let 
+let
+
+DOC = document,
+$DOC = $(document),
 
 info = {
-    appName: 'c2js',
+    appName: 'C2JS',
     navPrefix: null,
     fullscreen: null,
-    customSeek: {},
+    seekProp: {
+        seeking: false,
+        last: null
+    },
     keymap: {
-        space: ' ',
-        esc: 'escape'
+        space:  [' ',       'spacebar'  ],
+        ctrl:   ['ctrl',    'control'   ],
+        alt:    ['alt',     'altgraph'  ],
+        del:    ['del',     'delete'    ],
+        esc:    ['esc',     'escape'    ],
+        right:  ['right',   'arrowright'],
+        down:   ['down',    'arrowdown' ],
+        left:   ['left',    'arrowleft' ],
+        up:     ['up',      'arrowup'   ]
     }
 },
 
 /*
-    * Start all c2js found
+* Start all c2js found
 */
 start = function (query) {
     // Call engine to all c2js found
@@ -27,71 +41,64 @@ start = function (query) {
 },
 
 /*
-    * Configure control and video events
+* Configure control and video events
 */
 engine = function () {
 
-    let 
+    let
 
     $c2js = $(this),
     c2js = $c2js[0],
-    $video = $($c2js.find('video, audio, iframe')),
+    $video = $($c2js.find('video, audio')),
     video = $video[0],
 
-    // All c2js instance variables
+    // All c2js instance letiables
     cache = {
-        time: {
-            seeking: null
-        },
-        mouse: {
-            x: null,
-            y: null,
-            timeout: null
-        },
         shortcuts: {}
     },
 
     // Defines which binder to call
     propertyController = function ($control, properties) {
-        $control = $control.not('[c2-status]');
-        forEach(properties, (prop, propValue) => {
-            if      (prop === 'video')  {bindVideo($control, propValue); }
+        $control = $control.not('[c2-null]');
+        forEach(properties, function (prop, propValue) {
+            if      (prop === 'ready')  {bindReady(propValue); }
             else if (prop === 'events') {bindEvents($control, propValue); }
-            else if (prop === 'ready')  {bindReady($control, propValue); }
+            else if (prop === 'video')  {bindVideo(propValue); }
         });
     },
 
     // Bind control events inside video events
-    bindVideo = function ($callers, events) {
-        forEach(events, (event, handler) => {
+    bindVideo = function (events) {
+        forEach(events, function (event, handler) {
             $video.on(event, handler);
         });
     },
 
     // Bind control events
     bindEvents = function ($callers, events) {
-        forEach(events, (event, handler) => $callers.on(event, handler));
+        forEach(events, function (event, handler) {$callers.on(event, handler); });
     },
 
     // Bind some actions on DOM Ready
-    bindReady = function ($callers, handler) {
-        $callers.each(handler);
+    bindReady = function (handler) {
+        handler();
     },
 
     // Write shortcut on cache
     addShortcuts = function ($control) {
         $control.each(function () {
-            let keys = $(this).attr('c2-shortcuts');
+            let elem = this, keys = $(elem).attr('c2-shortcuts'), keymap;
             if (!keys) {return null; }
 
-            keys.split(' ').forEach(key => {
+            keys.split(' ').forEach(function (key) {
                 key = key.toLowerCase();
-
-                if (info.keymap[key]) {
-                    key = info.keymap[key];
+                if (keymap = info.keymap[key]) {
+                    keymap.forEach(function (key) {
+                        cache.shortcuts[key] = elem;
+                    });
+                } else {
+                    cache.shortcuts[key] = elem;
                 }
-
-                cache.shortcuts[key] = this;
             });
         });
     },
@@ -99,7 +106,6 @@ engine = function () {
     // Bind shortcut on c2js keydown event
     bindShortcuts = function () {
         if (!cache.shortcuts) {return null; }
-
         $c2js.keydown(function (e) {
             let element, key = e.key.toLowerCase();
             if (element = cache.shortcuts[key]) {
@@ -130,13 +136,17 @@ engine = function () {
     },
 
     // Get type
-    getType = function (controlName) {
-        return getValue(controls[controlName].type, controlName);
+    getType = function (controlName, noPrefix) {
+        let value = getValue(controls[controlName].type, controlName);
+        if (noPrefix) {
+            return value;
+        }
+        return 'c2-' + value;
     },
 
     // Search on c2js instance all controls of a specific type
     searchControl = function (controlType) {
-        return $c2js.find('[c2-' + controlType + ']');
+        return $c2js.find('[' + controlType + ']');
     },
 
     // Initialize c2js
@@ -146,11 +156,11 @@ engine = function () {
 
         // Find all controls on c2js instance
         forEach(controls, function(controlName, prop) {
-            let controlType = getValue(prop.type, controlName),
+            let controlType = getType(controlName),
                 $control = searchControl(controlType);
 
             if ($control) {
-                // Register all controls of the type on $all variable
+                // Register all controls of the type on $all letiable
                 controls[controlName]['$all'] = $control;
 
                 // Register events
@@ -171,64 +181,70 @@ engine = function () {
     // Helpers
 
     // get value or default
-    getValue = (value, defaultValue) => value ? value : defaultValue,
+    getValue = function (value, defaultValue) {return value ? value : defaultValue; },
 
     // forEach (heavy :<) to get key and value
     forEach = function (object, iterator) {
-        Object.keys(object).forEach(key => iterator(key, object[key]));
+        Object.keys(object).forEach(function (key) {iterator(key, object[key]); });
     },
 
     // toggle values passed by param
-    toggleValue = (value, toggle) => toggle[value === toggle[0] ? 1 : 0],
+    toggleValue = function (value, toggle) {return toggle[value === toggle[0] ? 1 : 0]; },
 
     // Get value, min or max if overflow
-    getMinMax = (value, min, max) =>    value < min ? min :
-                                        value > max ? max :
-                                        value,
+    getMinMax = function (value, min, max) {
+        return  value < min ? min :
+                value > max ? max :
+                value;
+    },
 
     setAttrIfNotExists = function (elem, attr, value) {
-        if (!$(elem).attr(attr)) {
-            $(elem).attr(attr, value);
-        }
+        $(elem).each(function () {
+            if (!this.getAttribute(attr)) {
+                this.setAttribute(attr, value);
+            }
+        });
     },
 
     addInfo = function (add) {
-        let info = $c2js.attr('c2js'),
+        let statuses = c2js.getAttribute('c2js'),
             addString = '';
 
-        add.forEach(status => {
-            if (info.indexOf(status) !== -1) {
-                console.info('Trying to add duplicated info: ' + status + '.');
+        add.forEach(function (status) {
+            if (statuses.indexOf(status) !== -1) {
+                console.info('Trying to add duplicated statuses: ' + status + '.');
                 return false;
             }
             addString += ' ' + status;
         });
 
-        info += addString;
-        $c2js.attr('c2js', info.trim());
+        statuses += addString;
+        c2js.setAttribute('c2js', statuses.trim());
     },
 
     rmInfo = function (rm) {
-        let info = $c2js.attr('c2js'),
+        let statuses = c2js.getAttribute('c2js'),
             rmRegExp = new RegExp('\\s?(' + rm.join("|") + ')');
 
-        info = info.replace(rmRegExp, '');
-        $c2js.attr('c2js', info.trim());
+        statuses = statuses.replace(rmRegExp, '');
+        c2js.setAttribute('c2js', statuses.trim());
     },
 
     // get/set attribute
-    c2 = function (control, controlName, value) {
-        let type = getType(controlName);
+    c2 = function (controls, controlName, value) {
+        let type = getType(controlName, true);
 
         if (value === undefined) {
-            return $(control).attr('c2-' + type);
-        }else if (value === true) {
+            return $(controls).attr('c2-' + type);
+        }
+
+        if (value === true) {
             addInfo([type]);
         } else if (value === false) {
             rmInfo([type]);
         }
 
-        $(control).attr('c2-' + type, value);
+        $(controls).attr('c2-' + type, value);
     },
 
     // Set attribute of all of the type
@@ -240,15 +256,13 @@ engine = function () {
     c2getAny = function (controlName) {
         let $all = getAll(controlName);
         if (!$all.length) {return ''; }
-
-        let type = getType(controlName);             
-        return $($all[0]).attr('c2-' + type);
+        return $all[0].getAttribute(getType(controlName));
     },
 
     // Get details of the number and convert if needed (not very suggestive)
     getDetailedNumber = function (number, typeTo, total) {
         if (!number) {number = 0; }
-        
+
         let match = (number + '').match(/^(\D*)(\d|\.)+(\D*)$/),
             result = {signal: match[1], type: match[3]},
             param = result.type === '%' ? total : typeTo;
@@ -288,7 +302,7 @@ engine = function () {
         let date = new Date(null),
             ISORange = [11, 8];
         date.setSeconds(seconds);
-        
+
         if (seconds < 3600) {
             ISORange = [14, 5];
         }
@@ -302,38 +316,30 @@ engine = function () {
 
         let fns = false, FS_ENTER = 0, FS_LEAVE = 1, FS_CHECK = 2;
 
-        if (document.webkitFullscreenEnabled) {
-
+        if (DOC.webkitFullscreenEnabled) {
             info.navPrefix = 'webkit';
             fns = ['webkitRequestFullscreen', 'webkitExitFullscreen', 'webkitFullscreenElement'];
-
-        } else if (document.mozFullScreenEnabled) {
-
+        } else if (DOC.mozFullScreenEnabled) {
             info.navPrefix = 'moz';
             fns = ['mozRequestFullScreen', 'mozCancelFullScreen', 'mozFullScreenElement'];
-
-        } else if (document.msFullscreenEnabled) {
-            
+        } else if (DOC.msFullscreenEnabled) {
             info.navPrefix = 'ms';
             fns = ['msRequestFullscreen', 'msExitFullscreen', 'msFullscreenElement'];
-
-        } else if (document.fullscreenEnabled) {
-
+        } else if (DOC.fullscreenEnabled) {
             info.navPrefix = '';
             fns = ['requestFullscreen', 'exitFullscreen', 'fullscreenElement'];
-
         } else {info.fullscreen = {allowed: false}; }
 
         if (fns) {
             info.fullscreen = {
                 allowed: true,
                 last: null,
-                enter: e => {
+                enter: function (e) {
                     e[fns[FS_ENTER]]();
                     info.fullscreen.last = e;
                 },
-                leave: () => document[fns[FS_LEAVE]](),
-                check: () => document[fns[FS_CHECK]],
+                leave: function () {DOC[fns[FS_LEAVE]](); },
+                check: function () {return DOC[fns[FS_CHECK]]; }
             };
         }
 
@@ -355,7 +361,7 @@ engine = function () {
                 play: function () {
                     c2setAll('play', true);
                 },
-                pause: function () {
+                'pause ended': function () {
                     c2setAll('play', false);
                 }
             }
@@ -372,7 +378,7 @@ engine = function () {
             },
 
             video: {
-                durationchange: function () {
+                'durationchange ended': function () {
                     c2setAll('stop', true);
                 },
                 play: function () {
@@ -438,7 +444,7 @@ engine = function () {
                         fsChange = info.navPrefix + 'fullscreenchange',
                         fsError = info.navPrefix + 'fullscreenerror';
 
-                    $(document).on(fsChange, function () {
+                    $DOC.on(fsChange, function () {
                         if (c2js === fs.last) {
                             if (fs.check()) {
                                 c2setAll('fullscreen', true);
@@ -447,7 +453,7 @@ engine = function () {
                             }
                         }
                     });
-                    $(document).on(fsError, function () {
+                    $DOC.on(fsError, function () {
                         if (c2js === fs.last) {
                             alert('Fullscreen Error!');
                             console.error('Fullscreen Error!');
@@ -460,7 +466,7 @@ engine = function () {
                 if (allowFullscreen()) {
                     getHelpers('fullscreen').setFullscreenEvents();
                 } else {
-                    c2(this, 'fullscreen', 'null');
+                    c2setAll('fullscreen', 'null');
                 }
             },
 
@@ -475,31 +481,79 @@ engine = function () {
         },
         customSeek: {
 
+            type: 'custom-seek',
+
             helpers: {
 
-                getValue: function (e) {
-                    let pos = e.pageX - $(this).offset().left;
-                    return getMinMax(pos / $(this).width(), 0, 1);
+                value: function (value) {
+                    if (value === undefined) {
+                        value = this.c2.getValue();
+                    }
+                    this.c2.setValue(value);
+                    return value;
                 },
-
-                setValue: function (fn) {fn.apply(this); },
-
-                mouseDown: function () {
-                    info.customSeek['actived'] = true;
+                
+                mouseDown: function (e) {
+                    let helpers = getHelpers('customSeek');
+                    info.seekProp.last = this;
+                    this.c2.mouse = {x: e.pageX, y: e.pageY};
+                    $DOC.on('mousemove', helpers.mouseMove)
+                        .on('mouseup', helpers.mouseUp);
+                    $(this).trigger('change');
+                },
+                
+                mouseUp: function () {
+                    let helpers = getHelpers('customSeek'),
+                        elem = info.seekProp.last;
+                    $DOC.off('mousemove', helpers.mouseMove)
+                        .off('mouseup', helpers.mouseUp);
+                    $(elem).trigger('mouseup');
                 },
 
                 mouseMove: function (e) {
-                    let pos = e.pageX - $(this).offset().left,
-                        pct = getMinMax(pos / $(this).width(), 0, 1);
-                    vid.currentTime = vid.duration * pct;
-                },
+                    let elem = info.seekProp.last;
+                    elem.c2.mouse = {x: e.pageX, y: e.pageY};
+                    $(elem).trigger('change');
+                }
+            },
 
-                mouseUp: function () {
-                    info.customSeek['actived'] = false;
-                },
+            ready: function () {
+                eachAll('customSeek', function () {
+                    let elem = this,
+                        $range = $(elem).find('[c2-direction]'),
+                        direction = $range.attr('c2-direction'),
+                        prop;
 
-                onUpdate: function (progress, loaded) {
+                    if (direction === 'left' || direction === 'right') {
+                        prop = {o: 'left', m: 'x', v: 'width'};
+                    } else {
+                        prop = {o: 'top', m: 'y', v: 'height'};
+                    }
 
+                    elem['c2'] = {
+                        mouse: null,
+                        setValue: function (value) {
+                            if (direction === 'left' || direction === 'top') {
+                                value = 100 - value;
+                            }
+                            $range.css(prop.v, value + '%');
+                        },
+                        getValue: function () {
+                            let value = elem.c2.mouse[prop.m] - $(elem).offset()[prop.o],
+                                pos = $(elem)[prop.v]();
+                            value = pos ? getMinMax(value / pos, 0, 1) * 100 : 0;
+                            if (direction === 'left' || direction === 'top') {
+                                value = 100 - value;
+                            }
+                            return value;
+                        }
+                    }
+                });
+            },
+
+            events: {
+                mousedown: function (e) {
+                    getHelpers('customSeek').mouseDown.apply(this, [e]);
                 }
             }
 
@@ -508,20 +562,31 @@ engine = function () {
 
             type: 'time-seek',
 
-            ready: function () {
+            ready: function () {eachAll('timeSeek', function () {
+                let custom = this.hasAttribute(getType('customSeek'));
+                this['c2value'] = getHelpers(custom ? 'customSeek' : 'timeSeek').value;
+
                 setAttrIfNotExists(this, 'step', 0.1);
                 setAttrIfNotExists(this, 'max', 100);
-                setAttrIfNotExists(this, 'value', 0);
-            },
+                this.c2value(0);
+            })},
 
             helpers: {
+                value: function (value) {
+                    if (value === undefined) {
+                        return $(this).val();
+                    }
+                    $(this).val(value);
+                },
                 setTime: function () {
-                    let value = $(this).val(), max = $(this).attr('max');
+                    let max = this.getAttribute('max'),
+                        value = this.c2value();
                     video.currentTime = video.duration * value / max;
                 },
                 setSeek: function () {
-                    let max = $(this).attr('max');
-                    $(this).val(video.currentTime * max / video.duration);
+                    let max = this.getAttribute('max'),
+                        value = video.currentTime * max / video.duration;
+                    this.c2value(value);
                 }
             },
 
@@ -530,16 +595,16 @@ engine = function () {
                     getHelpers('timeSeek').setTime.apply(this);
                 },
                 mousedown: function () {
-                    cache.time.seeking = true;
+                    info.seekProp.seeking = true;
                 },
                 mouseup: function () {
-                    cache.time.seeking = false;
+                    info.seekProp.seeking = false;
                 }
             },
 
             video: {
-                timeupdate: function () {
-                    if (!cache.time.seeking) {
+                'timeupdate seeked': function () {
+                    if (!info.seekProp.seeking) {
                         eachAll('timeSeek', getHelpers('timeSeek').setSeek);
                     }
                 }
@@ -550,24 +615,38 @@ engine = function () {
 
             type: 'volume-seek',
 
-            ready: function () {
+            ready: function () {eachAll('volumeSeek', function () {
+                let custom = this.hasAttribute(getType('customSeek'));
+                this['c2value'] = getHelpers(custom ? 'customSeek' : 'volumeSeek').value;
+
                 setAttrIfNotExists(this, 'step', 5);
                 setAttrIfNotExists(this, 'max', 100);
-                setAttrIfNotExists(this, 'value', 0);
-            },
+                this.c2value(0);
+            })},
 
             helpers: {
-                setVolume: function () {
-                    if (!video.muted || $(this).val()) {
-                        video.volume = $(this).val() / $(this).attr('max');
-                        video.muted = video.volume === 0;
+                value: function (value) {
+                    if (value === undefined) {
+                        return $(this).val();
                     }
+                    $(this).val(value);
                 },
+
+                setVolume: function () {
+                    if (video.muted && !this.c2value()) {return; }
+
+                    let max = this.getAttribute('max');
+                    video.volume = this.c2value() / max;
+                    video.muted = video.volume === 0;
+                },
+
                 setSeek: function () {
                     if (video.muted) {
-                        $(this).val(0); return;
+                        this.c2value(0); return;
                     }
-                    $(this).val(video.volume * $(this).attr('max'));
+
+                    let max = this.getAttribute('max');
+                    this.c2value(video.volume * max);
                 }
             },
 
@@ -576,28 +655,26 @@ engine = function () {
                     getHelpers('volumeSeek').setVolume.apply(this);
                 }
             },
-            
-            video: {
-                durationchange: () => eachAll('volumeSeek', function () {
-                    getHelpers('volumeSeek').setSeek.apply(this);
-                }),
-                volumechange: () => eachAll('volumeSeek', function () {
-                    getHelpers('volumeSeek').setSeek.apply(this);
-                })
-            }
 
+            video: {
+                'durationchange volumechange': function () {
+                    eachAll('volumeSeek', function () {
+                        getHelpers('volumeSeek').setSeek.apply(this);
+                    });
+                }
+            }
         },
         time: {
 
             helpers: {
                 updateTime: function () {
                     let time = video.currentTime, prefix = '';
-                        
+
                     if ($(this).attr('c2-time') === 'remaining') {
-                        time = video.duration - video.currentTime;  
+                        time = video.duration - video.currentTime;
                         prefix = '-';
                     }
-                    
+
                     $(this).text(prefix + convertTime(time));
                 }
             },
@@ -610,23 +687,25 @@ engine = function () {
             },
 
             video: {
-                timeupdate: () => eachAll('time', getHelpers('time').updateTime)
+                timeupdate: function () {eachAll('time', getHelpers('time').updateTime); }
             }
 
         },
         duration: {
-            
-            video: {
-                durationchange: () => eachAll('duration', function () {
-                    let time = video.duration,
-                    attr = $(this).attr('c2-duration');
 
-                    if (attr) {
-                        $(this).attr(attr, convertTime(time));
-                        return;
-                    }
-                    $(this).text(convertTime(time));
-                })
+            video: {
+                durationchange: function () {
+                    eachAll('duration', function () {
+                        let time = video.duration,
+                        attr = $(this).attr('c2-duration');
+
+                        if (attr) {
+                            $(this).attr(attr, convertTime(time));
+                            return;
+                        }
+                        $(this).text(convertTime(time));
+                    });
+                }
             }
 
         },
@@ -655,9 +734,7 @@ engine = function () {
 
                     if (details.signal) {
                         speed += video.playbackRate;
-                        speed = speed > max ? max : 
-                                speed < min ? min : 
-                                speed;
+                        speed = getMinMax(speed, min, max);
                     }
 
                     video.playbackRate = speed;
@@ -666,53 +743,56 @@ engine = function () {
 
         },
         hideMouse: {
-            
+
             type: 'hide-mouse',
-            
+
             ready: function () {
-                this['c2HideMouse'] = {
-                    id: null,
-                    timer: null,
-                    isMoving: (status) => {
-                        let hm = this.c2HideMouse,
-                            timer = $(this).attr('c2-hide-mouse');
-                        
-                        if (!status) {
-                            hm.timer = null;
-                            $(this).css('cursor', 'none');
-                            return;
-                        }
-                        
-                        hm.timer = timer ? getDetailedNumber(timer, 'ms').number : 3000;
-                        $(this).css('cursor', '');
-                    },
-                    timeout: () => this.c2HideMouse.isMoving(false)
-                };
+                eachAll('hideMouse', function () {
+                    let elem = this;
+                    this['c2HideMouse'] = {
+                        id: null,
+                        timer: null,
+                        isMoving: function (status) {
+                            let hm = elem.c2HideMouse,
+                                timer = $(elem).attr('c2-hide-mouse');
+
+                            if (!status) {
+                                hm.timer = null;
+                                $(elem).css('cursor', 'none');
+                                return;
+                            }
+
+                            hm.timer = timer ? getDetailedNumber(timer, 'ms').number : 3000;
+                            $(elem).css('cursor', '');
+                        },
+                        timeout: function () {elem.c2HideMouse.isMoving(false); }
+                    };
+                });
             },
-            
+
             events: {
-                mousemove: function (e) {
+                mousemove: function () {
                     let hideMouse = this.c2HideMouse;
-                    
+
+                    if (!hideMouse) {return; }
+
                     if (!hideMouse.timer) {hideMouse.isMoving(true); }
-                    
+
                     if (hideMouse.id) {clearTimeout(hideMouse.id); }
                     hideMouse.id = setTimeout(hideMouse.timeout, hideMouse.timer);
                 }
             }
 
         },
-        blank: {},
+        custom: {}
     };
 
     initControls();
 };
 
 // Start on DOM Ready
-$(() => start('[c2js]'));
+$(function () {start('[c2js]'); });
 
 };
 
-$.c2js({
-
-});
+$.c2js();

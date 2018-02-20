@@ -43,10 +43,6 @@
     height: 100%;
 }
 
-c2-row > button {
-    border-radius: 50%;
-}
-
 .c2-table {
     display: block;
 }
@@ -60,17 +56,11 @@ c2-row > button {
 }
 
 .c2-footer {
-    font-family: monospace, helvetica, sans-serif;
-    height: 4%;
-}
-
-.c2-footer * {
-    width: 15%;
-    text-align: center;
+    height: 10%;
 }
 
 .c2-container [c2-time-seek] {
-    width: 65%;
+    width: 100%;
 }
 
 button[c2-play] {

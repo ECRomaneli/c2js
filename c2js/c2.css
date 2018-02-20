@@ -1,5 +1,7 @@
 
-[c2js~=fullscreen], [c2js] video {
+[c2js~=fullscreen], 
+[c2js] video, 
+[c2js] audio {
     /* Fit */
     width: 100%;
     height: 100%;
@@ -14,4 +16,31 @@
 
     /* Force show on top */
     z-index: 2147483647;
+}
+
+/* [EXPERIMENTAL SEEK EXAMPLE] */
+
+[c2js] [c2-custom-seek] {
+    position: relative;
+    width: 100%;
+    height: 10px;
+    margin: 4px 2px 6px;
+    background-color: #444;
+}
+
+[c2js] [c2-custom-seek] > * {
+    position: relative;
+    width: 0;
+    height: 100%;
+    background-color: #ff0000;
+}
+
+[c2js] [c2-custom-seek] > :after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    right: -5px;
+    width: 10px;
+    height: 100%;
+    background-color: #9c0000;
 }

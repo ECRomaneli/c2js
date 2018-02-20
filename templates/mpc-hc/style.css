@@ -9,8 +9,7 @@
     cursor: default;
 }
 
-.c2-bar:hover,
-.c2-bar:active {
+.c2-bar:hover {
     opacity: 1;
 }
 
@@ -86,11 +85,19 @@ button[c2-stop] {
 }
 
 button[c2-move^='-'] {
+    background-position: calc(-32px * 4) 0;   
+}
+
+button[c2-speed^='-'] {
     background-position: calc(-32px * 5) 0;   
 }
 
-button[c2-move^='+'] {
+button[c2-speed^='+'] {
     background-position: calc(-32px * 6) 0;   
+}
+
+button[c2-move^='+'] {
+    background-position: calc(-32px * 7) 0;   
 }
 
 button[c2-mute] {
@@ -114,22 +121,22 @@ button[c2-fullscreen] {
     background-position: calc(-32px * 9) 0;
 }
 
-span[c2-status]::after { 
+span[c2-null]::after { 
     content: "Loading...";
 }
 
-span[c2-status][c2-play=false]::after { 
+span[c2-null][c2-play=false]::after { 
     content: "Paused";
 }
 
-span[c2-status][c2-stop=true]::after { 
+span[c2-null][c2-stop=true]::after { 
     content: "Stopped";
 }
 
-span[c2-status][c2-play=true]::after { 
+span[c2-null][c2-play=true]::after { 
     content: "Playing";
 }
 
-span[c2-status][c2-mute=true]::before { 
+span[c2-null][c2-mute=true]::before { 
     content: "[MUTED] ";
 }
