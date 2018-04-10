@@ -479,92 +479,12 @@ engine = function () {
             }
 
         },
-        customSeek: {
-
-            type: 'custom-seek',
-
-            helpers: {
-
-                value: function (value) {
-                    if (value === undefined) {
-                        value = this.c2.getValue();
-                    }
-                    this.c2.setValue(value);
-                    return value;
-                },
-                
-                mouseDown: function (e) {
-                    let helpers = getHelpers('customSeek');
-                    info.seekProp.last = this;
-                    this.c2.mouse = {x: e.pageX, y: e.pageY};
-                    $DOC.on('mousemove', helpers.mouseMove)
-                        .on('mouseup', helpers.mouseUp);
-                    $(this).trigger('change');
-                },
-                
-                mouseUp: function () {
-                    let helpers = getHelpers('customSeek'),
-                        elem = info.seekProp.last;
-                    $DOC.off('mousemove', helpers.mouseMove)
-                        .off('mouseup', helpers.mouseUp);
-                    $(elem).trigger('mouseup');
-                },
-
-                mouseMove: function (e) {
-                    let elem = info.seekProp.last;
-                    elem.c2.mouse = {x: e.pageX, y: e.pageY};
-                    $(elem).trigger('change');
-                }
-            },
-
-            ready: function () {
-                eachAll('customSeek', function () {
-                    let elem = this,
-                        $range = $(elem).find('[c2-direction]'),
-                        direction = $range.attr('c2-direction'),
-                        prop;
-
-                    if (direction === 'left' || direction === 'right') {
-                        prop = {o: 'left', m: 'x', v: 'width'};
-                    } else {
-                        prop = {o: 'top', m: 'y', v: 'height'};
-                    }
-
-                    elem['c2'] = {
-                        mouse: null,
-                        setValue: function (value) {
-                            if (direction === 'left' || direction === 'top') {
-                                value = 100 - value;
-                            }
-                            $range.css(prop.v, value + '%');
-                        },
-                        getValue: function () {
-                            let value = elem.c2.mouse[prop.m] - $(elem).offset()[prop.o],
-                                pos = $(elem)[prop.v]();
-                            value = pos ? getMinMax(value / pos, 0, 1) * 100 : 0;
-                            if (direction === 'left' || direction === 'top') {
-                                value = 100 - value;
-                            }
-                            return value;
-                        }
-                    }
-                });
-            },
-
-            events: {
-                mousedown: function (e) {
-                    getHelpers('customSeek').mouseDown.apply(this, [e]);
-                }
-            }
-
-        },
         timeSeek: {
 
             type: 'time-seek',
 
             ready: function () {eachAll('timeSeek', function () {
-                let custom = this.hasAttribute(getType('customSeek'));
-                this['c2value'] = getHelpers(custom ? 'customSeek' : 'timeSeek').value;
+                this['c2value'] = getHelpers('timeSeek').value;
 
                 setAttrIfNotExists(this, 'step', 0.1);
                 setAttrIfNotExists(this, 'max', 100);
@@ -616,8 +536,7 @@ engine = function () {
             type: 'volume-seek',
 
             ready: function () {eachAll('volumeSeek', function () {
-                let custom = this.hasAttribute(getType('customSeek'));
-                this['c2value'] = getHelpers(custom ? 'customSeek' : 'volumeSeek').value;
+                this['c2value'] = getHelpers('volumeSeek').value;
 
                 setAttrIfNotExists(this, 'step', 5);
                 setAttrIfNotExists(this, 'max', 100);
