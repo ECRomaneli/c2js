@@ -59,7 +59,7 @@ engine = function () {
 
     // Defines which binder to call
     propertyController = function ($control, properties) {
-        $control = $control.not('[c2-null]');
+        $control = $control.not('[c2-custom]');
         forEach(properties, function (prop, propValue) {
             if      (prop === 'ready')  {bindReady(propValue); }
             else if (prop === 'events') {bindEvents($control, propValue); }
@@ -358,11 +358,12 @@ engine = function () {
             },
 
             video: {
+                'durationchange pause ended': function () {
+                    c2setAll('play', false);
+                },
+
                 play: function () {
                     c2setAll('play', true);
-                },
-                'pause ended': function () {
-                    c2setAll('play', false);
                 }
             }
 
@@ -446,11 +447,7 @@ engine = function () {
 
                     $DOC.on(fsChange, function () {
                         if (c2js === fs.last) {
-                            if (fs.check()) {
-                                c2setAll('fullscreen', true);
-                            } else {
-                                c2setAll('fullscreen', false);
-                            }
+                            c2setAll('fullscreen', fs.check());
                         }
                     });
                     $DOC.on(fsError, function () {
