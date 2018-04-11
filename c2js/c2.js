@@ -11,6 +11,7 @@ $DOC = $(document),
 
 info = {
     appName: 'C2JS',
+    status: '',
     navPrefix: null,
     fullscreen: null,
     seekProp: {
@@ -59,7 +60,7 @@ engine = function () {
 
     // Defines which binder to call
     propertyController = function ($control, properties) {
-        $control = $control.not('[c2-custom]');
+        $control = $control.not('[c2-null]');
         forEach(properties, function (prop, propValue) {
             if      (prop === 'ready')  {bindReady(propValue); }
             else if (prop === 'events') {bindEvents($control, propValue); }
@@ -84,7 +85,7 @@ engine = function () {
         handler();
     },
 
-    // Write shortcut on cache
+    // Write shortcuts on cache
     addShortcuts = function ($control) {
         $control.each(function () {
             let elem = this, keys = $(elem).attr('c2-shortcuts'), keymap;
@@ -103,7 +104,7 @@ engine = function () {
         });
     },
 
-    // Bind shortcut on c2js keydown event
+    // Bind shortcuts on c2js keydown event
     bindShortcuts = function () {
         if (!cache.shortcuts) {return null; }
         $c2js.keydown(function (e) {
@@ -114,7 +115,7 @@ engine = function () {
         });
     },
 
-    // Redirect focus on control parameter to c2js
+    // Redirect leaf element focus to c2js
     redirectControlFocus = function () {
         $c2js.find(':not(:has(:first))').focus(function () {
             $c2js.focus();
@@ -206,28 +207,31 @@ engine = function () {
         });
     },
 
-    addInfo = function (add) {
-        let statuses = c2js.getAttribute('c2js'),
-            addString = '';
+    addStatus = function (add) {
+        let addString = '';
 
         add.forEach(function (status) {
-            if (statuses.indexOf(status) !== -1) {
-                console.info('Trying to add duplicated statuses: ' + status + '.');
-                return false;
+            if (hasStatus(status)) {
+                console.info('Trying to add duplicated status: ' + status + '.');
+                return;
             }
             addString += ' ' + status;
         });
 
-        statuses += addString;
-        c2js.setAttribute('c2js', statuses.trim());
+        info.status += addString;
+        info.status = info.status.trim();
+        c2js.setAttribute('c2js', info.status);
     },
 
-    rmInfo = function (rm) {
-        let statuses = c2js.getAttribute('c2js'),
-            rmRegExp = new RegExp('\\s?(' + rm.join("|") + ')');
+    rmStatus = function (rm) {
+        let rmRegExp = new RegExp('\\s?(' + rm.join("|") + ')');
+        info.status = info.status.replace(rmRegExp, '').trim();
+        c2js.setAttribute('c2js', info.status);
+    },
 
-        statuses = statuses.replace(rmRegExp, '');
-        c2js.setAttribute('c2js', statuses.trim());
+    // Verify if status ahead exists
+    hasStatus = function (status) {
+        return info.status.indexOf(status) !== -1;
     },
 
     // get/set attribute
@@ -239,9 +243,9 @@ engine = function () {
         }
 
         if (value === true) {
-            addInfo([type]);
+            addStatus([type]);
         } else if (value === false) {
-            rmInfo([type]);
+            rmStatus([type]);
         }
 
         $(controls).attr('c2-' + type, value);
@@ -353,35 +357,50 @@ engine = function () {
 
             events: {
                 click: function () {
+                    if (!$video.attr('src')) {
+                        $video.trigger('error');
+                        console.error('Trying to play/pause video without source.');
+                        return;
+                    }
                     video.paused ? video.play() : video.pause();
                 }
             },
 
             video: {
-                'durationchange pause ended': function () {
-                    c2setAll('play', false);
-                },
-
                 play: function () {
                     c2setAll('play', true);
+                },
+                pause: function () {
+                    c2setAll('play', false);
                 }
             }
 
         },
         stop: {
 
-            events: {
-                click: function () {
-                    video.pause();
-                    video.currentTime = 0;
+            helpers: {
+                stopVideo: function () {
+                    if (!video.paused) {
+                        video.pause();
+                    }
                     c2setAll('stop', true);
                 }
             },
 
+            events: {
+                click: function () {
+                    getHelpers('stop').stopVideo();
+                    video.currentTime = 0;
+                }
+            },
+
             video: {
-                'durationchange ended': function () {
-                    c2setAll('stop', true);
+                'loadstart ended abort error': function () {
+                    if (!hasStatus('stop')) {
+                        getHelpers('stop').stopVideo();
+                    }
                 },
+
                 play: function () {
                     c2setAll('stop', false);
                 }
@@ -447,7 +466,7 @@ engine = function () {
 
                     $DOC.on(fsChange, function () {
                         if (c2js === fs.last) {
-                            c2setAll('fullscreen', fs.check());
+                            c2setAll('fullscreen', !!fs.check());
                         }
                     });
                     $DOC.on(fsError, function () {
@@ -470,8 +489,9 @@ engine = function () {
             events: {
                 click: function () {
                     let fs = info.fullscreen;
-                    if (!fs.allowed) {return null; }
-                    fs.check() ? fs.leave() : fs.enter(c2js);
+                    if (fs.allowed) {
+                        fs.check() ? fs.leave() : fs.enter(c2js);
+                    }
                 }
             }
 
@@ -480,20 +500,12 @@ engine = function () {
 
             type: 'time-seek',
 
-            ready: function () {eachAll('timeSeek', function () {
-                this['c2value'] = getHelpers('timeSeek').value;
-
-                setAttrIfNotExists(this, 'step', 0.1);
-                setAttrIfNotExists(this, 'max', 100);
-                this.c2value(0);
-            })},
-
             helpers: {
                 value: function (value) {
                     if (value === undefined) {
                         return $(this).val();
                     }
-                    $(this).val(value);
+                    $(this).val(value | 0);
                 },
                 setTime: function () {
                     let max = this.getAttribute('max'),
@@ -506,6 +518,14 @@ engine = function () {
                     this.c2value(value);
                 }
             },
+
+            ready: function () {eachAll('timeSeek', function () {
+                this['c2value'] = getHelpers('timeSeek').value;
+
+                setAttrIfNotExists(this, 'step', 0.1);
+                setAttrIfNotExists(this, 'max', 100);
+                this.c2value(0);
+            })},
 
             events: {
                 'input change': function () {
@@ -545,7 +565,7 @@ engine = function () {
                     if (value === undefined) {
                         return $(this).val();
                     }
-                    $(this).val(value);
+                    $(this).val(value | 0);
                 },
 
                 setVolume: function () {
@@ -553,7 +573,7 @@ engine = function () {
 
                     let max = this.getAttribute('max');
                     video.volume = this.c2value() / max;
-                    video.muted = video.volume === 0;
+                    video.muted = !video.volume;
                 },
 
                 setSeek: function () {
@@ -573,7 +593,7 @@ engine = function () {
             },
 
             video: {
-                'durationchange volumechange': function () {
+                'loadstart volumechange': function () {
                     eachAll('volumeSeek', function () {
                         getHelpers('volumeSeek').setSeek.apply(this);
                     });
