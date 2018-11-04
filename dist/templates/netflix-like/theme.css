@@ -1,0 +1,147 @@
+.nf-bar {
+    margin-left: 2%;
+    position: absolute;
+    bottom: 2%;
+    width: 96%;
+    transition: .2s linear all;
+}
+
+.nf-bar input[type="range"] {
+    margin: 0;
+    padding: 0;
+}
+
+[c2js~="play"] .nf-bar {
+    opacity: 0;
+}
+
+.nf-bar:hover {
+    opacity: 1;
+}
+
+.nf-row {
+    width: 100%;
+    display: block;
+}
+
+.nf-row * {
+    display: inline-block;
+}
+
+[c2-time-seek] {
+    width: 100%;
+}
+
+[c2-volume-seek] {
+    width: 0;
+    visibility: hidden;
+    transition: visibility 0s linear .3s, width .3s;
+}
+
+.nf-btn-group:hover [c2-volume-seek], [c2-volume-seek]:active {
+    opacity: 1;
+    visibility: visible;
+    width: 120px;
+    transition: visibility 0s linear 0s, width .3s;
+}
+
+[c2-time-seek] {
+    height: 100%;
+}
+
+.nf-time-seek {
+    height: 12px;
+    width: calc(100% - 80px);
+}
+
+.nf-current-time {
+    color: white;
+    font-family: 'Courier New', Courier, monospace;
+    cursor: default;
+}
+
+.nf-rounded-bar {
+    background-color: rgba(36, 32, 32, 0.8);
+    width: 100%;
+    border-radius: 10px;
+    padding: 10px 0;
+}
+
+.nf-btn-group button {
+    opacity: .5;
+}
+
+.nf-btn-group:hover button {
+    opacity: 1;
+}
+
+.nf-rounded-bar, .nf-rounded-bar * {
+    height: 40px;
+}
+
+.nf-align-left {
+    width: 100%;
+    left: 0;
+}
+
+.nf-align-right {
+    right: 0;
+}
+
+.nf-rounded-bar .nf-align-left, .nf-rounded-bar .nf-align-right {
+    margin: 0 12px;
+}
+
+.nf-align-left, .nf-align-right {
+    position: absolute;
+}
+
+.nf-btn-group {
+    white-space: nowrap;
+}
+
+.nf-btn-group button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    width: 40px;
+    padding: 0;
+
+    background-repeat: no-repeat;
+    background-size: 100% 65%;
+    background-position: center;
+
+    transition: 0.3s linear all;
+}
+
+button[c2-play] {
+    background-image: url(../icons/white/play-solid.svg);
+}
+
+button[c2-play=true] {
+    background-image: url(../icons/white/pause-solid.svg);
+}
+
+button[c2-mute] {
+    background-image: url(../icons/white/volume-up-solid.svg);
+}
+
+button[c2-mute=true] {
+    background-image: url(../icons/white/volume-mute-solid.svg);
+}
+
+button[c2-move^='-'] {
+    background-image: url(../icons/white/backward-solid.svg);
+}
+
+button[c2-move^='+'] {
+    background-image: url(../icons/white/forward-solid.svg);
+}
+
+button[c2-fullscreen] {
+    background-image: url(../icons/white/expand-solid.svg);
+}
+
+button[c2-fullscreen=true] {
+    background-image: url(../icons/white/compress-solid.svg);
+}

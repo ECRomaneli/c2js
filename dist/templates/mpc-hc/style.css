@@ -1,0 +1,132 @@
+[c2js] {
+    background-color: black;
+}
+.c2-bar {
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    opacity: 0;
+    cursor: default;
+}
+
+.c2-bar:hover {
+    opacity: 1;
+}
+
+.c2-controls {
+    background-color: #f8f8f8;
+    overflow: hidden;
+    height: 56px;
+    padding: 6px 12px 0;
+}
+
+.c2-controls button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+
+    background-repeat: no-repeat;
+    background-size: 100% 65%;
+    background-position: center;
+}
+
+.c2-info-bar {
+    background-color: #000;
+    color: #fff;
+    font-family: monospace, helvetica, sans-serif;
+    font-size: 12px;
+    display: block;
+    padding: 3px 8px;
+}
+
+.c2-divider, .c2-align-right {
+    display: inline-block;
+}
+
+.c2-divider {
+    width: 1px;
+    height: 32px;
+    background: gray;
+    position: absolute;
+}
+
+.c2-align-right {
+    float: right;
+}
+
+div[c2-play] {
+    width: 100%;
+    height: 100%;
+}
+
+input[c2-time-seek] {
+    height: 20px;
+    width: 100%;
+    display: block;
+    padding: 0;
+    margin: 0;
+}
+
+input[c2-volume-seek] {
+    max-width: 100px;
+    display: inline-block;
+}
+
+button[c2-play] {
+    background-image: url(../icons/play-solid.svg);
+}
+
+button[c2-play=true] {
+    background-image: url(../icons/pause-solid.svg);
+}
+
+button[c2-stop] {
+    background-image: url(../icons/stop-solid.svg);
+}
+
+button[c2-move^='-'] {
+    background-image: url(../icons/backward-solid.svg);  
+}
+
+button[c2-move^='+'] {
+    background-image: url(../icons/forward-solid.svg);
+}
+
+button[c2-mute] {
+    background-image: url(../icons/volume-up-solid.svg);
+}
+
+button[c2-mute=true] {
+    background-image: url(../icons/volume-mute-solid.svg); 
+}
+
+button[c2-fullscreen] {
+    background-image: url(../icons/expand-solid.svg);
+}
+
+button[c2-fullscreen=true] {
+    background-image: url(../icons/compress-solid.svg);
+}
+
+span[c2-null]::after { 
+    content: "Loading...";
+}
+
+span[c2-null][c2-play=false]::after { 
+    content: "Paused";
+}
+
+span[c2-null][c2-stop=true]::after { 
+    content: "Stopped";
+}
+
+span[c2-null][c2-play=true]::after { 
+    content: "Playing";
+}
+
+span[c2-null][c2-mute=true]::before { 
+    content: "[MUTED] ";
+}
