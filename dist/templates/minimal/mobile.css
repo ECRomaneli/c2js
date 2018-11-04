@@ -10,6 +10,7 @@
     height: 100%;
 
     background-color: rgba(0, 0, 0, 0.7);
+    cursor: default;
 
     visibility: hidden;
     opacity: 0;
@@ -17,7 +18,7 @@
 }
 
 .c2-container.actived {
-    visibility: visible;
+    visibility: unset;
     opacity: 1;
     transition: visibility 0s linear 0s, opacity 300ms;
 }
@@ -41,6 +42,26 @@
     width: 33.33%;
     width: calc(100% / 3);
     height: 100%;
+
+    transition: 0.3s linear all;
+}
+
+.c2-row > button {
+    border-radius: 50%;
+    transition: 0.2s linear all;
+}
+
+.c2-row > button:active {
+    opacity: 0.7;
+}
+
+.c2-row > [c2-fullscreen=true],
+.c2-row > [c2-mute=true] {
+    opacity: 0.7;
+}
+
+.c2-row > [c2-fullscreen=null] {
+    opacity: 0.15;
 }
 
 .c2-table {
@@ -56,11 +77,18 @@
 }
 
 .c2-footer {
+    font-family: monospace, helvetica, sans-serif;
     height: 10%;
 }
 
+.c2-footer * {
+    width: 15%;
+    text-align: center;
+    height: 20px;
+}
+
 .c2-container [c2-time-seek] {
-    width: 100%;
+    width: 65%;
 }
 
 button[c2-play] {
@@ -70,10 +98,6 @@ button[c2-play] {
 
 button[c2-play=true] {
     background-image: url(img/256/pause.png);
-}
-
-button[c2-stop] {
-    
 }
 
 button[c2-move^='-'] {
@@ -104,6 +128,6 @@ button[c2-fullscreen=true] {
     background-image: url(img/256/fullscreen-on.png);
 }
 
-button[c2-blank=menu] {
+button[c2-custom=menu] {
     background-image: url(img/256/menu.png);
 }

@@ -9,8 +9,7 @@
     cursor: default;
 }
 
-.c2-bar:hover,
-.c2-bar:active {
+.c2-bar:hover {
     opacity: 1;
 }
 
@@ -27,8 +26,11 @@
     cursor: pointer;
     width: 32px;
     height: 32px;
-    background-image: url(toolbar.png);
     padding: 0;
+
+    background-repeat: no-repeat;
+    background-size: 100% 65%;
+    background-position: center;
 }
 
 .c2-info-bar {
@@ -74,62 +76,57 @@ input[c2-volume-seek] {
 }
 
 button[c2-play] {
-    background-position: 0 0;
+    background-image: url(../icons/play-solid.svg);
 }
 
 button[c2-play=true] {
-    background-position: -32px 0;
+    background-image: url(../icons/pause-solid.svg);
 }
 
 button[c2-stop] {
-    background-position: calc(-32px * 2) 0;
+    background-image: url(../icons/stop-solid.svg);
 }
 
 button[c2-move^='-'] {
-    background-position: calc(-32px * 5) 0;   
+    background-image: url(../icons/backward-solid.svg);  
 }
 
 button[c2-move^='+'] {
-    background-position: calc(-32px * 6) 0;   
+    background-image: url(../icons/forward-solid.svg);
 }
 
 button[c2-mute] {
-    background-position: calc(-32px * 12) 0;
-    float: left;
+    background-image: url(../icons/volume-up-solid.svg);
 }
 
 button[c2-mute=true] {
-    background-position: calc(-32px * 13) 0;   
-}
-
-button[c2-volume^='-'] {
-    background-position: calc(-32px * 14) 0;   
-}
-
-button[c2-volume^='+'] {
-    background-position: calc(-32px * 12) 0;   
+    background-image: url(../icons/volume-mute-solid.svg); 
 }
 
 button[c2-fullscreen] {
-    background-position: calc(-32px * 9) 0;
+    background-image: url(../icons/expand-solid.svg);
 }
 
-span[c2-status]::after { 
+button[c2-fullscreen=true] {
+    background-image: url(../icons/compress-solid.svg);
+}
+
+span[c2-null]::after { 
     content: "Loading...";
 }
 
-span[c2-status][c2-play=false]::after { 
+span[c2-null][c2-play=false]::after { 
     content: "Paused";
 }
 
-span[c2-status][c2-stop=true]::after { 
+span[c2-null][c2-stop=true]::after { 
     content: "Stopped";
 }
 
-span[c2-status][c2-play=true]::after { 
+span[c2-null][c2-play=true]::after { 
     content: "Playing";
 }
 
-span[c2-status][c2-mute=true]::before { 
+span[c2-null][c2-mute=true]::before { 
     content: "[MUTED] ";
 }

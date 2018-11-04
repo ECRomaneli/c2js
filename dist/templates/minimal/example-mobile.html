@@ -26,8 +26,9 @@
         <script src="https://code.jquery.com/jquery-3.2.1.js"></script>	
 
         <!-- C2JS -->
-        <link rel="stylesheet" href="../../c2js/c2.css" type="text/css" />
-        <script type="text/javascript" src="../../c2js/c2.js"></script>
+        <link rel="stylesheet" href="../../web/c2.css" type="text/css" />
+        <script type="text/javascript" src="../../web/c2.js"></script>
+        <script>$( () => $('[c2js]').c2js() )</script>
 
         <!-- C2 Theme -->
         <link rel="stylesheet" href="mobile.css" type="text/css" />
@@ -36,29 +37,29 @@
     <body>
 
         <div c2js>
-            <video c2-blank='menu' c2-hide-mouse='1000' src="../../sample.mp4"></video>
+            <video c2-custom='menu' c2-hide-mouse='1000' src="../../sample.mp4"></video>
             <div class="c2-container c2-table actived">
                 <div class="c2-top c2-row">
                     <button c2-blank></button>
-                    <button c2-volume='+10%' c2-shortcuts='arrowup'></button>
-                    <button c2-blank='menu' c2-shortcuts='tab'></button>
+                    <button c2-volume='+10%' c2-shortcuts='up'></button>
+                    <button c2-custom='menu' c2-shortcuts='tab'></button>
                 </div>
                 <div class="c2-middle c2-row">
-                    <button c2-move="-5" c2-shortcuts='arrowleft'></button>
+                    <button c2-move="-5" c2-shortcuts='left'></button>
                     <button c2-play c2-shortcuts='space'></button>
-                    <button c2-move="+5" c2-shortcuts='arrowright'></button>
+                    <button c2-move="+5" c2-shortcuts='right'></button>
                 </div>
                 <div class="c2-bottom c2-row">
                     <button c2-mute c2-shortcuts='m'></button>
-                    <button c2-volume='-10%' c2-shortcuts='arrowdown'></button>
+                    <button c2-volume='-10%' c2-shortcuts='down'></button>
                     <button c2-fullscreen c2-shortcuts='f enter'></button>
                 </div>
                 <div class="c2-footer c2-row">
-                    <input c2-time-seek type="range" max="100" step="0.1" value='0'>
+                    <span c2-time='current'>00:00</span>
+                    <input c2-time-seek type="range">
+                    <span c2-duration>00:00</span>
                 </div>
             </div>
         </div>
-        
-        
     </body>
 </html>
