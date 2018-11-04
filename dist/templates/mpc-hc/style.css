@@ -76,39 +76,39 @@ input[c2-volume-seek] {
 }
 
 button[c2-play] {
-    background-image: url(../icons/play-solid.svg);
+    background-image: url(../assets/icons/play-solid.svg);
 }
 
 button[c2-play=true] {
-    background-image: url(../icons/pause-solid.svg);
+    background-image: url(../assets/icons/pause-solid.svg);
 }
 
 button[c2-stop] {
-    background-image: url(../icons/stop-solid.svg);
+    background-image: url(../assets/icons/stop-solid.svg);
 }
 
 button[c2-move^='-'] {
-    background-image: url(../icons/backward-solid.svg);  
+    background-image: url(../assets/icons/backward-solid.svg);  
 }
 
 button[c2-move^='+'] {
-    background-image: url(../icons/forward-solid.svg);
+    background-image: url(../assets/icons/forward-solid.svg);
 }
 
 button[c2-mute] {
-    background-image: url(../icons/volume-up-solid.svg);
+    background-image: url(../assets/icons/volume-up-solid.svg);
 }
 
 button[c2-mute=true] {
-    background-image: url(../icons/volume-mute-solid.svg); 
+    background-image: url(../assets/icons/volume-mute-solid.svg); 
 }
 
 button[c2-fullscreen] {
-    background-image: url(../icons/expand-solid.svg);
+    background-image: url(../assets/icons/expand-solid.svg);
 }
 
 button[c2-fullscreen=true] {
-    background-image: url(../icons/compress-solid.svg);
+    background-image: url(../assets/icons/compress-solid.svg);
 }
 
 span[c2-null]::after { 

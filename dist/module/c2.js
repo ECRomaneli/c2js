@@ -614,7 +614,7 @@ exports.c2js = c2js;
             if (cfg.saveTime) {
                 storage(STORAGE.SRC, this.media.src);
                 this.$media.on('loadeddata', function () {
-                    storage(STORAGE.SRC, this.media.src);
+                    storage(STORAGE.SRC, this.src);
                 });
                 this.$media.on('stimeupdate ended', function () {
                     storage(STORAGE.TIME, this.currentTime);
