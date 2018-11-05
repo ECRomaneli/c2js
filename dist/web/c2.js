@@ -162,105 +162,105 @@ function c2js(config) {
             this.ctrls = {
                 play: {
                     events: {
-                        click: function (_e, inst) {
-                            if (!inst.$media.attr('src')) {
-                                inst.$media.trigger('error');
+                        click: function (e) {
+                            if (!e.$media.attr('src')) {
+                                e.$media.trigger('error');
                                 console.error('Trying to play/pause media without source.');
                                 return;
                             }
-                            inst.media.paused ? inst.media.play() : inst.media.pause();
+                            e.media.paused ? e.media.play() : e.media.pause();
                         }
                     },
                     media: {
-                        play: function (_e, _i, helpers) {
-                            helpers.$all.data('play', true);
+                        play: function (e) {
+                            e.$all.data('play', true);
                         },
-                        pause: function (_e, _i, helpers) {
-                            helpers.$all.data('play', false);
+                        pause: function (e) {
+                            e.$all.data('play', false);
                         }
                     }
                 },
                 stop: {
                     events: {
-                        click: function (_e, inst, helpers) {
-                            if (!inst.media.paused) {
-                                inst.media.pause();
+                        click: function (e) {
+                            if (!e.media.paused) {
+                                e.media.pause();
                             }
-                            helpers.$all.data('stop', true);
-                            inst.media.currentTime = 0;
+                            e.$all.data('stop', true);
+                            e.media.currentTime = 0;
                         }
                     },
                     media: {
-                        play: function (_e, _i, helpers) {
-                            helpers.$all.data('stop', false);
+                        play: function (e) {
+                            e.$all.data('stop', false);
                         },
-                        'loadeddata ended abort error': function (_e, inst, helpers) {
-                            if (!inst.hasStatus('stop')) {
-                                if (!inst.media.paused) {
-                                    inst.media.pause();
+                        'loadeddata ended abort error': function (e) {
+                            if (!e.context.hasStatus('stop')) {
+                                if (!e.media.paused) {
+                                    e.media.pause();
                                 }
-                                helpers.$all.data('stop', true);
+                                e.$all.data('stop', true);
                             }
                         }
                     }
                 },
                 move: {
                     events: {
-                        click: function (_e, inst) {
-                            var max = inst.media.duration, broken = breakNumber(c2(this).data('move'), 's', max), time = broken.number;
+                        click: function (e) {
+                            var max = e.media.duration, broken = breakNumber(c2(this).data('move'), 's', max), time = broken.number;
                             if (broken.signal) {
-                                time += inst.media.currentTime;
+                                time += e.media.currentTime;
                                 time = minMaxVal(time, 0, max);
                             }
-                            inst.media.currentTime = time;
+                            e.media.currentTime = time;
                         }
                     }
                 },
                 volume: {
                     events: {
-                        click: function (_e, inst) {
+                        click: function (e) {
                             var broken = breakNumber(c2(this).data('volume'), null, 1), volume = broken.number;
                             if (broken.signal) {
-                                volume += inst.media.volume;
+                                volume += e.media.volume;
                                 volume = minMaxVal(volume, 0, 1);
                             }
-                            inst.media.volume = volume;
+                            e.media.volume = volume;
                         }
                     }
                 },
                 mute: {
                     events: {
-                        click: function (_e, inst) {
-                            inst.media.muted = !inst.media.muted;
+                        click: function (e) {
+                            e.media.muted = !e.media.muted;
                         }
                     },
                     media: {
-                        'loadeddata volumechange': function (_e, inst, helpers) {
-                            var muted = inst.media.volume === 0 || inst.media.muted;
-                            helpers.$all.data('mute', muted);
+                        'loadeddata volumechange': function (e) {
+                            var muted = e.media.volume === 0 || e.media.muted;
+                            e.$all.data('mute', muted);
                         }
                     }
                 },
                 fullscreen: {
-                    ready: function (_e, inst, helpers) {
+                    ready: function (e) {
                         if (!allowFullscreen()) {
-                            helpers.$all.data('fullscreen', 'null');
+                            e.$all.data('fullscreen', 'null');
                             return;
                         }
                         FS_VAR.onChange(function () {
-                            helpers.$all.data('fullscreen', inst.c2js === FS_VAR.check());
+                            e.$all.data('fullscreen', e.c2js === FS_VAR.check());
                         });
                         FS_VAR.onError(function () {
-                            if (inst.c2js === FS_VAR.check()) {
+                            if (e.c2js === FS_VAR.check()) {
                                 alert('Fullscreen Error!');
                                 console.error('Fullscreen Error!');
                             }
                         });
                     },
                     events: {
-                        click: function (_e, inst) {
+                        click: function (e) {
                             if (FS_VAR.allowed) {
-                                FS_VAR.check() ? FS_VAR.leave() : FS_VAR.enter(inst.c2js);
+                                FS_VAR.check() ? FS_VAR.leave() : FS_VAR.enter(e.c2js);
                             }
                         }
                     }
@@ -276,16 +276,16 @@ function c2js(config) {
                             c2(el).val(value);
                         }
                     },
-                    ready: function (_e, _i, helpers) {
-                        helpers.$all.each(function (_, el) {
+                    ready: function (e) {
+                        e.$all.each(function (_, el) {
                             c2(el).attrIfNotExists('step', 0.1);
                             c2(el).attrIfNotExists('max', 100);
                             c2(el).val(0);
                         });
                     },
                     events: {
-                        'input change': function (_e, inst, helpers) {
-                            helpers.setTime(this, inst.media);
+                        'input change': function (e) {
+                            e.setTime(this, e.media);
                         },
                         mousedown: function () {
                             SEEK_DATA.seeking = true;
@@ -295,10 +295,10 @@ function c2js(config) {
                         }
                     },
                     media: {
-                        'loadeddata timeupdate': function (_e, inst, helpers) {
+                        'loadeddata timeupdate': function (e) {
                             if (!SEEK_DATA.seeking) {
-                                helpers.$all.each(function (_, el) {
-                                    helpers.setSeek(el, inst.media);
+                                e.$all.each(function (_, el) {
+                                    e.setSeek(el, e.media);
                                 });
                             }
                         }
@@ -324,24 +324,24 @@ function c2js(config) {
                             c2(el).val(media.volume * max);
                         }
                     },
-                    ready: function (_e, _i, helpers) {
-                        helpers.$all.each(function (_, el) {
+                    ready: function (e) {
+                        e.$all.each(function (_, el) {
                             c2(el).attrIfNotExists('step', 5);
                             c2(el).attrIfNotExists('max', 100);
                             c2(el).val(0);
                         });
                     },
                     events: {
-                        'input change': function (_e, inst, helpers) {
-                            helpers.$all.each(function (_, el) {
-                                helpers.setVolume(el, inst.media);
+                        'input change': function (e) {
+                            e.$all.each(function (_, el) {
+                                e.setVolume(el, e.media);
                             });
                         }
                     },
                     media: {
-                        'loadeddata volumechange': function (_e, inst, helpers) {
-                            helpers.$all.each(function (_, el) {
-                                helpers.setSeek(el, inst.media);
+                        'loadeddata volumechange': function (e) {
+                            e.$all.each(function (_, el) {
+                                e.setSeek(el, e.media);
                             });
                         }
                     }
@@ -358,24 +358,24 @@ function c2js(config) {
                         }
                     },
                     events: {
-                        click: function (_e, inst, helpers) {
+                        click: function (e) {
                             c2(this).data('time', toggleVal(c2(this).data('time'), ['current', 'remaining']));
-                            helpers.update(this, inst.media);
+                            e.update(this, e.media);
                         }
                     },
                     media: {
-                        'loadeddata stimeupdate': function (_e, inst, helpers) {
-                            helpers.$all.each(function (_, el) {
-                                helpers.update(el, inst.media);
+                        'loadeddata stimeupdate': function (e) {
+                            e.$all.each(function (_, el) {
+                                e.update(el, e.media);
                             });
                         }
                     }
                 },
                 duration: {
                     media: {
-                        'loadeddata durationchange': function (_e, inst, helpers) {
-                            helpers.$all.each(function (_, el) {
-                                var time = inst.media.duration, attr = c2(el).data('duration');
+                        'loadeddata durationchange': function (e) {
+                            e.$all.each(function (_, el) {
+                                var time = e.media.duration, attr = c2(el).data('duration');
                                 if (attr) {
                                     c2(el).attr(attr, convertTime(time));
                                     return;
@@ -387,20 +387,20 @@ function c2js(config) {
                 },
                 loop: {
                     events: {
-                        click: function (_e, inst) {
-                            c2(this).data('loop', inst.media.loop = !inst.media.loop);
+                        click: function (e) {
+                            c2(this).data('loop', e.media.loop = !e.media.loop);
                         }
                     }
                 },
                 speed: {
                     events: {
-                        click: function (_e, inst) {
-                            var min = inst.config.speed.min, max = inst.config.speed.max, broken = breakNumber(c2(this).data('speed'), null, 1), speed = broken.number;
+                        click: function (e) {
+                            var speedCfg = e.context.config.speed, broken = breakNumber(c2(this).data('speed'), null, 1), speed = broken.number;
                             if (broken.signal) {
-                                speed += inst.media.playbackRate;
-                                speed = minMaxVal(speed, min, max);
+                                speed += e.media.playbackRate;
+                                speed = minMaxVal(speed, speedCfg.min, speedCfg.max);
                             }
-                            inst.media.playbackRate = speed;
+                            e.media.playbackRate = speed;
                         }
                     }
                 },
@@ -416,25 +416,25 @@ function c2js(config) {
                             c2(el).css('cursor', 'none');
                         }
                     },
-                    ready: function (_e, _i, helpers) {
-                        helpers.$all.each(function (_, el) {
+                    ready: function (e) {
+                        e.$all.each(function (_, el) {
                             el.c2 = { id: null, timer: null, cursor: c2(el).css('cursor') };
                         });
                     },
                     events: {
-                        mousemove: function (_e, _i, helpers) {
+                        mousemove: function (e) {
                             var _this_1 = this;
                             var prop = this.c2;
                             if (!prop) {
                                 return;
                             }
                             if (!prop.timer) {
-                                helpers.isMoving(this);
+                                e.isMoving(this);
                             }
                             if (prop.id) {
                                 clearTimeout(prop.id);
                             }
-                            prop.id = setTimeout(function () { helpers.isStopped(_this_1); }, prop.timer);
+                            prop.id = setTimeout(function () { e.isStopped(_this_1); }, prop.timer);
                         }
                     }
                 },
@@ -461,7 +461,7 @@ function c2js(config) {
                 this.$media = this.$c2js.findOne('video, audio'),
                 this.media = this.$media.first();
             this.$media.on('timeupdate', function () {
-                if ((_this_1.media.currentTime | 0) !== (_this_1.cache.currentTime | 0)) {
+                if ((_this_1.cache.currentTime | 0) !== (_this_1.media.currentTime | 0)) {
                     _this_1.cache.currentTime = _this_1.media.currentTime;
                     _this_1.$media.trigger('stimeupdate');
                 }
@@ -480,18 +480,26 @@ function c2js(config) {
             return this.$c2js.find("[c2-" + ctrlType + "]");
         };
         Init.prototype.createHandler = function (handler, prop) {
-            var inst = this;
-            return function (e) { handler.call(this, e, inst, prop.helpers); };
+            var h = prop.helpers;
+            h.c2js = this.c2js;
+            h.$c2js = this.$c2js;
+            h.media = this.media;
+            h.$media = this.$media;
+            h.context = this;
+            return function (e) {
+                h.event = e;
+                handler.call(this, h);
+            };
         };
         Init.prototype.addStatus = function (status) {
             this.status += ' ' + status;
             this.status = this.status.trim();
-            this.$c2js.attr('c2js', this.status);
+            this.$c2js.attr('c2-status', this.status);
         };
         Init.prototype.rmStatus = function (status) {
             var rmRegExp = new RegExp("\\s?(" + status + ")");
             this.status = this.status.replace(rmRegExp, '').trim();
-            this.$c2js.attr(c2js.APP_NAME, this.status);
+            this.$c2js.attr('c2-status', this.status);
         };
         Init.prototype.hasStatus = function (status) {
             return this.status.indexOf(status) !== -1;

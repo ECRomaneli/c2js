@@ -8,6 +8,16 @@ export declare namespace c2js {
             max?: number;
         };
     };
+    type C2Event = {
+        originalEvent: Event;
+        c2js: HTMLElement;
+        $c2js: c2.Query;
+        media: HTMLMediaElement;
+        $media: c2.Query;
+        $all: c2.Query;
+        context: c2js.Init;
+        [key: string]: any;
+    };
     type ArrayLikeObject = {
         [key: string]: any;
         length?: number;

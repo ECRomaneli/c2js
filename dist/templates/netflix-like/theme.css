@@ -115,33 +115,33 @@
 }
 
 button[c2-play] {
-    background-image: url(../icons/white/play-solid.svg);
+    background-image: url(../assets/icons/white/play-solid.svg);
 }
 
 button[c2-play=true] {
-    background-image: url(../icons/white/pause-solid.svg);
+    background-image: url(../assets/icons/white/pause-solid.svg);
 }
 
 button[c2-mute] {
-    background-image: url(../icons/white/volume-up-solid.svg);
+    background-image: url(../assets/icons/white/volume-up-solid.svg);
 }
 
 button[c2-mute=true] {
-    background-image: url(../icons/white/volume-mute-solid.svg);
+    background-image: url(../assets/icons/white/volume-mute-solid.svg);
 }
 
 button[c2-move^='-'] {
-    background-image: url(../icons/white/backward-solid.svg);
+    background-image: url(../assets/icons/white/backward-solid.svg);
 }
 
 button[c2-move^='+'] {
-    background-image: url(../icons/white/forward-solid.svg);
+    background-image: url(../assets/icons/white/forward-solid.svg);
 }
 
 button[c2-fullscreen] {
-    background-image: url(../icons/white/expand-solid.svg);
+    background-image: url(../assets/icons/white/expand-solid.svg);
 }
 
 button[c2-fullscreen=true] {
-    background-image: url(../icons/white/compress-solid.svg);
+    background-image: url(../assets/icons/white/compress-solid.svg);
 }
