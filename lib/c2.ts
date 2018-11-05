@@ -13,16 +13,24 @@ export namespace c2js {
         saveWith?: 'none' | 'cookie' | 'localStorage',
         saveTime?: boolean,
         speed?: { min?: number, max?: number }
+    };
+    export type C2Event = {
+        originalEvent: Event,
+        c2js: HTMLElement,
+        $c2js: c2.Query,
+        media: HTMLMediaElement,
+        $media: c2.Query,
+        $all: c2.Query,
+        context: c2js.Init,
+        [key: string]: any
     }
     type ArrayLikeObject = { [key: string]: any, length?: number };
-    type PlainObject<T> = { [key: string]: T };
-    type Helpers = { [key: string]: any, $all?: c2.Query };
-    type Handler = (event?: Event, instance?: c2js.Init, helpers?: Helpers) => void;
+    type Handler = (event?: C2Event) => void;
     type ControlProperty = {
         ready?: Handler,
-        events?: PlainObject<Handler>,
-        media?: PlainObject<Handler>,
-        helpers?: Helpers
+        events?: { [key: string]: Handler },
+        media?: { [key: string]: Handler },
+        helpers?: any
     };
     type ControlProperties = { [key: string]: ControlProperty };
     type BrokenNumber = { signal?: string, number: number, type?: string };
@@ -221,7 +229,7 @@ export namespace c2js {
             this.media = <HTMLMediaElement> this.$media.first();
 
             this.$media.on('timeupdate', () => {
-                if ((this.media.currentTime|0) !== (this.cache.currentTime|0)) {
+                if ((this.cache.currentTime|0) !== (this.media.currentTime|0)) {
                     this.cache.currentTime = this.media.currentTime;
                     this.$media.trigger('stimeupdate');
                 }
@@ -244,20 +252,30 @@ export namespace c2js {
         }
 
         private createHandler(handler: Function, prop: ControlProperty): Handler {
-            let inst = this;
-            return function (e) { handler.call(this, e, inst, prop.helpers); }
+            let h = prop.helpers;
+
+            h.c2js = this.c2js;
+            h.$c2js = this.$c2js;
+            h.media = this.media;
+            h.$media = this.$media;
+            h.context = this;
+
+            return function (e) {
+                h.event = e;
+                handler.call(this, h);
+            };
         }
 
         private addStatus(status: string): void {
             this.status += ' ' + status;
             this.status = this.status.trim();
-            this.$c2js.attr('c2js', this.status);
+            this.$c2js.attr('c2-status', this.status);
         }
 
         private rmStatus(status: string): void {
             let rmRegExp = new RegExp(`\\s?(${status})`);
             this.status = this.status.replace(rmRegExp, '').trim();
-            this.$c2js.attr(APP_NAME, this.status);
+            this.$c2js.attr('c2-status', this.status);
         }
 
         private hasStatus(status: string): boolean {
@@ -419,42 +437,42 @@ export namespace c2js {
         private ctrls: ControlProperties = {
             play: {
                 events: {
-                    click: function (_e, inst) {
-                        if (!inst.$media.attr('src')) {
-                            inst.$media.trigger('error');
+                    click: function (e) {
+                        if (!e.$media.attr('src')) {
+                            e.$media.trigger('error');
                             console.error('Trying to play/pause media without source.');
                             return;
                         }
-                        inst.media.paused ? inst.media.play() : inst.media.pause();
+                        e.media.paused ? e.media.play() : e.media.pause();
                     }
                 },
                 media: {
-                    play: function (_e, _i, helpers) {
-                        helpers.$all.data('play', true);
+                    play: function (e) {
+                        e.$all.data('play', true);
                     },
-                    pause: function (_e, _i, helpers) {
-                        helpers.$all.data('play', false);
+                    pause: function (e) {
+                        e.$all.data('play', false);
                     }
                 }
             },
 
             stop: {
                 events: {
-                    click: function (_e, inst, helpers) {
-                        if (!inst.media.paused) { inst.media.pause(); }
-                        helpers.$all.data('stop', true);
-                        inst.media.currentTime = 0;
+                    click: function (e) {
+                        if (!e.media.paused) { e.media.pause(); }
+                        e.$all.data('stop', true);
+                        e.media.currentTime = 0;
                     }
                 },
                 media: {
-                    play: function (_e, _i, helpers) {
-                        helpers.$all.data('stop', false);
+                    play: function (e) {
+                        e.$all.data('stop', false);
                     },
 
-                    'loadeddata ended abort error': function (_e, inst, helpers) {
-                        if (!inst.hasStatus('stop')) {
-                            if (!inst.media.paused) { inst.media.pause(); }
-                            helpers.$all.data('stop', true);
+                    'loadeddata ended abort error': function (e) {
+                        if (!e.context.hasStatus('stop')) {
+                            if (!e.media.paused) { e.media.pause(); }
+                            e.$all.data('stop', true);
                         }
                     }
                 }
@@ -462,62 +480,62 @@ export namespace c2js {
 
             move: {
                 events: {
-                    click: function (_e, inst) {
-                        let max = inst.media.duration,
+                    click: function (e) {
+                        let max = e.media.duration,
                             broken = breakNumber(c2(this).data('move'), 's', max),
                             time = broken.number;
     
                         if (broken.signal) {
-                            time += inst.media.currentTime;
+                            time += e.media.currentTime;
                             time = minMaxVal(time, 0, max);
                         }
-                        inst.media.currentTime = time;
+                        e.media.currentTime = time;
                     }
                 }
             },
 
             volume: {
                 events: {
-                    click: function (_e, inst) {
+                    click: function (e) {
                         let broken = breakNumber(c2(this).data('volume'), null, 1),
                             volume = broken.number;
     
                         if (broken.signal) {
-                            volume += inst.media.volume;
+                            volume += e.media.volume;
                             volume = minMaxVal(volume, 0, 1);
                         }
-                        inst.media.volume = volume;
+                        e.media.volume = volume;
                     }
                 }
             },
 
             mute: {
                 events: {
-                    click: function (_e, inst) {
-                        inst.media.muted = !inst.media.muted;
+                    click: function (e) {
+                        e.media.muted = !e.media.muted;
                     }
                 },
                 media: {
-                    'loadeddata volumechange': function (_e, inst, helpers) {
-                        let muted = inst.media.volume === 0 || inst.media.muted;
-                        helpers.$all.data('mute', muted);
+                    'loadeddata volumechange': function (e) {
+                        let muted = e.media.volume === 0 || e.media.muted;
+                        e.$all.data('mute', muted);
                     }
                 }
             },
 
             fullscreen: {
-                ready: function (_e, inst, helpers) {
+                ready: function (e) {
                     if (!allowFullscreen()) {
-                        helpers.$all.data('fullscreen', 'null');
+                        e.$all.data('fullscreen', 'null');
                         return;
                     }
 
                     FS_VAR.onChange(() => {
-                        helpers.$all.data('fullscreen', inst.c2js === FS_VAR.check());
+                        e.$all.data('fullscreen', e.c2js === FS_VAR.check());
                     });
 
                     FS_VAR.onError(() => {
-                        if (inst.c2js === FS_VAR.check()) {
+                        if (e.c2js === FS_VAR.check()) {
                             alert('Fullscreen Error!');
                             console.error('Fullscreen Error!');
                         }
@@ -525,9 +543,9 @@ export namespace c2js {
                 },
     
                 events: {
-                    click: function (_e, inst) {
+                    click: function (e) {
                         if (FS_VAR.allowed) {
-                            FS_VAR.check() ? FS_VAR.leave() : FS_VAR.enter(inst.c2js);
+                            FS_VAR.check() ? FS_VAR.leave() : FS_VAR.enter(e.c2js);
                         }
                     }
                 }
@@ -546,16 +564,16 @@ export namespace c2js {
                         c2(el).val(value);
                     }
                 },
-                ready: function (_e, _i, helpers) {
-                    helpers.$all.each(function (_, el) {
+                ready: function (e) {
+                    e.$all.each(function (_, el) {
                         c2(el).attrIfNotExists('step', 0.1);
                         c2(el).attrIfNotExists('max', 100);
                         c2(el).val(0);
                     });
                 },
                 events: {
-                    'input change': function (_e, inst, helpers) {
-                        helpers.setTime(this, inst.media);
+                    'input change': function (e) {
+                        e.setTime(this, e.media);
                     },
                     mousedown: function () {
                         SEEK_DATA.seeking = true;
@@ -565,10 +583,10 @@ export namespace c2js {
                     }
                 },
                 media: {
-                    'loadeddata timeupdate': function (_e, inst, helpers) {
+                    'loadeddata timeupdate': function (e) {
                         if (!SEEK_DATA.seeking) {
-                            helpers.$all.each((_, el) => {
-                                helpers.setSeek(el, inst.media);
+                            e.$all.each((_, el) => {
+                                e.setSeek(el, e.media);
                             });
                         }
                     }
@@ -595,24 +613,24 @@ export namespace c2js {
                         c2(el).val(media.volume * max);
                     }
                 },
-                ready: function (_e, _i, helpers) {
-                    helpers.$all.each((_, el) => {
+                ready: function (e) {
+                    e.$all.each((_, el) => {
                         c2(el).attrIfNotExists('step', 5);
                         c2(el).attrIfNotExists('max', 100);
                         c2(el).val(0);
                     });
                 },
                 events: {
-                    'input change': function (_e, inst, helpers) {
-                        helpers.$all.each((_, el) => {
-                            helpers.setVolume(el, inst.media);
+                    'input change': function (e) {
+                        e.$all.each((_, el) => {
+                            e.setVolume(el, e.media);
                         });
                     }
                 },
                 media: {
-                    'loadeddata volumechange': function (_e, inst, helpers) {
-                        helpers.$all.each((_, el) => {
-                            helpers.setSeek(el, inst.media);
+                    'loadeddata volumechange': function (e) {
+                        e.$all.each((_, el) => {
+                            e.setSeek(el, e.media);
                         });
                     }
                 }
@@ -632,15 +650,15 @@ export namespace c2js {
                     }
                 },
                 events: {
-                    click: function (_e, inst, helpers) {
+                    click: function (e) {
                         c2(this).data('time', toggleVal(c2(this).data('time'), ['current', 'remaining']));
-                        helpers.update(this, inst.media);
+                        e.update(this, e.media);
                     }
                 },
                 media: {
-                    'loadeddata stimeupdate': function (_e, inst, helpers) {
-                        helpers.$all.each((_, el) => {
-                            helpers.update(el, inst.media);
+                    'loadeddata stimeupdate': function (e) {
+                        e.$all.each((_, el) => {
+                            e.update(el, e.media);
                         });
                     }
                 }
@@ -648,9 +666,9 @@ export namespace c2js {
 
             duration: {
                 media: {
-                    'loadeddata durationchange': function (_e, inst, helpers) {
-                        helpers.$all.each((_, el) => {
-                            let time = inst.media.duration,
+                    'loadeddata durationchange': function (e) {
+                        e.$all.each((_, el) => {
+                            let time = e.media.duration,
                                 attr = c2(el).data('duration');
                             
                             if (attr) {
@@ -666,26 +684,25 @@ export namespace c2js {
 
             loop: {
                 events: {
-                    click: function (_e, inst) {
-                        c2(this).data('loop', inst.media.loop = !inst.media.loop);
+                    click: function (e) {
+                        c2(this).data('loop', e.media.loop = !e.media.loop);
                     }
                 }
             },
 
             speed: {
                 events: {
-                    click: function (_e, inst) {
-                        let min = inst.config.speed.min,
-                            max = inst.config.speed.max,
+                    click: function (e) {
+                        let speedCfg = e.context.config.speed,
                             broken = breakNumber(c2(this).data('speed'), null, 1),
                             speed = broken.number;
     
                         if (broken.signal) {
-                            speed += inst.media.playbackRate;
-                            speed = minMaxVal(speed, min, max);
+                            speed += e.media.playbackRate;
+                            speed = minMaxVal(speed, speedCfg.min, speedCfg.max);
                         }
     
-                        inst.media.playbackRate = speed;
+                        e.media.playbackRate = speed;
                     }
                 }
             },
@@ -702,20 +719,20 @@ export namespace c2js {
                         c2(el).css('cursor', 'none');
                     }
                 },
-                ready: function (_e, _i, helpers) {
-                    helpers.$all.each((_, el) => {
+                ready: function (e) {
+                    e.$all.each((_, el) => {
                         (<any>el).c2 = { id: null, timer: null, cursor: c2(el).css('cursor') };
                     });
                 },
                 events: {
-                    mousemove: function (_e, _i, helpers) {
+                    mousemove: function (e) {
                         let prop = this.c2;
-                        if (!prop) {return; }
+                        if (!prop) { return; }
     
-                        if (!prop.timer) {helpers.isMoving(this); }
+                        if (!prop.timer) { e.isMoving(this); }
     
-                        if (prop.id) {clearTimeout(prop.id); }
-                        prop.id = setTimeout(() => { helpers.isStopped(this) }, prop.timer);
+                        if (prop.id) { clearTimeout(prop.id); }
+                        prop.id = setTimeout(() => { e.isStopped(this); }, prop.timer);
                     }
                 }
             },
