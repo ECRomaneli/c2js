@@ -236,7 +236,7 @@ function c2js(config) {
                     },
                     media: {
                         'loadeddata volumechange': function (e) {
-                            var muted = e.media.volume === 0 || e.media.muted;
+                            var muted = !e.media.volume || e.media.muted;
                             e.$all.data('mute', muted);
                         }
                     }
@@ -492,6 +492,9 @@ function c2js(config) {
             };
         };
         Init.prototype.addStatus = function (status) {
+            if (this.hasStatus(status)) {
+                return;
+            }
             this.status += ' ' + status;
             this.status = this.status.trim();
             this.$c2js.attr('c2-status', this.status);
@@ -629,8 +632,11 @@ function c2js(config) {
                 this.$media.on('loadeddata', function () {
                     storage(STORAGE.SRC, this.src);
                 });
-                this.$media.on('stimeupdate ended', function () {
+                this.$media.on('stimeupdate', function () {
                     storage(STORAGE.TIME, this.currentTime);
+                });
+                this.$media.on('ended', function () {
+                    storage(STORAGE.TIME, 0);
                 });
             }
         };
@@ -685,15 +691,9 @@ function c2js(config) {
                 });
             };
             Query.prototype.one = function (events, fn) {
-                events = events.split(' ');
-                fn.$handler = function (e) {
+                return this.on(events, fn.$handler = function (e) {
                     this.removeEventListener(e.type, fn.$handler);
                     return fn.apply(this, arguments);
-                };
-                return this.each(function (_, el) {
-                    events.forEach(function (event) {
-                        el.addEventListener(event, fn.$handler, false);
-                    });
                 });
             };
             Query.prototype.trigger = function (type) {

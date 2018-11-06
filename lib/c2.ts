@@ -267,6 +267,7 @@ export namespace c2js {
         }
 
         private addStatus(status: string): void {
+            if (this.hasStatus(status)) { return; }
             this.status += ' ' + status;
             this.status = this.status.trim();
             this.$c2js.attr('c2-status', this.status);
@@ -423,8 +424,11 @@ export namespace c2js {
                 this.$media.on('loadeddata', function () {
                     storage(STORAGE.SRC, this.src);
                 });
-                this.$media.on('stimeupdate ended', function () {
+                this.$media.on('stimeupdate', function () {
                     storage(STORAGE.TIME, this.currentTime);
+                });
+                this.$media.on('ended', function () {
+                    storage(STORAGE.TIME, 0);
                 });
             }
         }
@@ -517,7 +521,7 @@ export namespace c2js {
                 },
                 media: {
                     'loadeddata volumechange': function (e) {
-                        let muted = e.media.volume === 0 || e.media.muted;
+                        let muted = !e.media.volume || e.media.muted;
                         e.$all.data('mute', muted);
                     }
                 }
@@ -792,15 +796,9 @@ export namespace c2js {
             }
 
             public one(events, fn): this {
-                events = events.split(' ');
-                fn.$handler = function (e) {
+                return this.on(events, fn.$handler = function (e) {
                     this.removeEventListener(e.type, fn.$handler);
                     return fn.apply(this, arguments);
-                };
-                return this.each((_, el) => {
-                    events.forEach((event) => {
-                        el.addEventListener(event, fn.$handler, false);
-                    });
                 });
             }
 
