@@ -1,7 +1,6 @@
 export function c2js(config?: c2js.Config) {
-    let elems: any = document.querySelectorAll(`[${c2js.APP_NAME}]`);
-
     c2js.ready((c2) => {
+        let elems: any = document.querySelectorAll(`[${c2js.APP_NAME}]`);
         c2.each(elems, (_, el) => {
             !el.c2js && new c2js.Init(el, config);
         });
@@ -514,7 +513,7 @@ export namespace c2js {
                     setSeek: function (el, media) {
                         let max = parseFloat(c2(el).attr('max')),
                             value = media.currentTime * max / media.duration;
-                        c2(el).val(value);
+                        c2(el).val(value || 0);
                     }
                 },
                 ready: function (e) {
@@ -553,7 +552,7 @@ export namespace c2js {
                         if (media.muted && !value) { return; }
     
                         let max = c2(el).attr('max');
-                        media.volume = value / max;
+                        media.volume = (value / max) || 0;
                         media.muted = !media.volume;
                     },
                     setSeek: function (el, media) {
