@@ -615,11 +615,12 @@ exports.c2js = c2js;
                 return;
             }
             let actualSrc = this.$media.attr('src'), updateTime = () => {
-                if (this.media.src === src && isSet(time)) {
-                    this.media.currentTime = parseInt(time);
-                    // Fix: Issue "updatetime unchanged" on Edge and IE
-                    this.media.currentTime = time + 0.001;
+                if (!isSet(time)) {
+                    return;
                 }
+                // Fix: Issue "updatetime unchanged" on Edge and IE
+                this.media.currentTime = parseInt(time);
+                this.media.currentTime = time + 0.001;
             };
             // Fix: Same video loaded on start
             if (actualSrc === src) {
