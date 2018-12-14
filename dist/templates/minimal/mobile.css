@@ -124,8 +124,3 @@
     visibility: hidden;
     background-image: url(../assets/icons/white/arrow-left-solid.svg);
 }
-
-.mm-row > button[c2-custom=back].enabled {
-    visibility: unset;
-}
-
