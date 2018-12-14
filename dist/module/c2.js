@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 function c2js(config) {
-    let elems = document.querySelectorAll(`[${c2js.APP_NAME}]`);
     c2js.ready((c2) => {
+        let elems = document.querySelectorAll(`[${c2js.APP_NAME}]`);
         c2.each(elems, (_, el) => {
             !el.c2js && new c2js.Init(el, config);
         });
@@ -162,15 +162,26 @@ exports.c2js = c2js;
         constructor(el, config) {
             this.cache = {};
             this.ctrls = {
+                loading: {
+                    media: {
+                        seeking: function (e) {
+                            e.$all.data('loading', true);
+                        },
+                        canplay: function (e) {
+                            e.$all.data('loading', false);
+                        }
+                    }
+                },
                 play: {
                     events: {
                         click: function (e) {
-                            if (!e.$media.attr('src')) {
+                            if (e.$media.attr('src')) {
+                                e.media.paused ? e.media.play() : e.media.pause();
+                            }
+                            else {
                                 e.$media.trigger('error');
                                 console.error('Trying to play/pause media without source.');
-                                return;
                             }
-                            e.media.paused ? e.media.play() : e.media.pause();
                         }
                     },
                     media: {
@@ -238,8 +249,7 @@ exports.c2js = c2js;
                     },
                     media: {
                         'loadeddata volumechange': function (e) {
-                            let muted = !e.media.volume || e.media.muted;
-                            e.$all.data('mute', muted);
+                            e.$all.data('mute', !e.media.volume || e.media.muted);
                         }
                     }
                 },
@@ -275,7 +285,7 @@ exports.c2js = c2js;
                         },
                         setSeek: function (el, media) {
                             let max = parseFloat(c2(el).attr('max')), value = media.currentTime * max / media.duration;
-                            c2(el).val(value);
+                            c2(el).val(value || 0);
                         }
                     },
                     ready: function (e) {
@@ -314,23 +324,24 @@ exports.c2js = c2js;
                                 return;
                             }
                             let max = c2(el).attr('max');
-                            media.volume = value / max;
+                            media.volume = (value / max) || 0;
                             media.muted = !media.volume;
                         },
                         setSeek: function (el, media) {
                             if (media.muted) {
                                 c2(el).val(0);
-                                return;
                             }
-                            let max = c2(el).attr('max');
-                            c2(el).val(media.volume * max);
+                            else {
+                                let max = c2(el).attr('max');
+                                c2(el).val(media.volume * max);
+                            }
                         }
                     },
                     ready: function (e) {
                         e.$all.each((_, el) => {
-                            c2(el).attrIfNotExists('step', 5);
-                            c2(el).attrIfNotExists('max', 100);
-                            c2(el).val(0);
+                            c2(el).attrIfNotExists('step', 5)
+                                .attrIfNotExists('max', 100)
+                                .val(0);
                         });
                     },
                     events: {
@@ -380,9 +391,10 @@ exports.c2js = c2js;
                                 let time = e.media.duration, attr = c2(el).data('duration');
                                 if (attr) {
                                     c2(el).attr(attr, convertTime(time));
-                                    return;
                                 }
-                                c2(el).text(convertTime(time));
+                                else {
+                                    c2(el).text(convertTime(time));
+                                }
                             });
                         }
                     }
@@ -569,9 +581,10 @@ exports.c2js = c2js;
                         keymap.forEach((key) => {
                             this.shortcuts[key] = el;
                         });
-                        return;
                     }
-                    this.shortcuts[key] = el;
+                    else {
+                        this.shortcuts[key] = el;
+                    }
                 });
             });
         }
@@ -584,32 +597,37 @@ exports.c2js = c2js;
                 }
             });
         }
+        redirectControlFocus() {
+            let $leaves = this.$c2js.find('*').filter((_, el) => !el.firstElementChild);
+            $leaves.on('focus', () => { this.$c2js.trigger('focus'); });
+        }
         loadSavedInfo() {
             let cfg = this.config;
             if (cfg.saveWith === 'none') {
                 return;
             }
             let storage = this.cache.storage = cfg.saveWith === 'cookie' ? c2.cookie : c2.storage, volume = storage(STORAGE.VOLUME), muted = storage(STORAGE.MUTED), src = storage(STORAGE.SRC), time = storage(STORAGE.TIME);
-            muted = muted === true || muted === 'true';
-            if (!this.media.src && isSet(src)) {
-                this.$media.attr('src', src);
+            if (isSet(volume)) {
+                this.media.volume = volume;
             }
-            let updateFn = () => {
-                if (isSet(volume)) {
-                    this.media.volume = volume;
-                }
-                if (this.media.src === src && isSet(time)) {
-                    this.media.currentTime = parseInt(time);
-                    // Second update fix issue "updatetime unchanged" on Edge and IE
-                    this.media.currentTime = parseInt(time) + 0.001;
-                }
-                this.media.muted = muted;
-            };
-            if (this.media.buffered.length) {
-                updateFn();
+            this.media.muted = muted === true || muted === 'true';
+            if (!isSet(src)) {
                 return;
             }
-            this.$media.one('loadeddata', updateFn);
+            let actualSrc = this.$media.attr('src'), updateTime = () => {
+                if (this.media.src === src && isSet(time)) {
+                    this.media.currentTime = parseInt(time);
+                    // Fix: Issue "updatetime unchanged" on Edge and IE
+                    this.media.currentTime = time + 0.001;
+                }
+            };
+            // Fix: Same video loaded on start
+            if (actualSrc === src) {
+                updateTime();
+            }
+            else if (!actualSrc) {
+                this.$media.one('loadeddata', updateTime).attr('src', src);
+            }
         }
         bindSaveEvents() {
             let cfg = this.config;
@@ -619,25 +637,31 @@ exports.c2js = c2js;
             let storage = this.cache.storage;
             this.$media.on('volumechange', function () {
                 let volume = this.volume, muted = this.muted;
+                // Save volume status
                 storage(STORAGE.VOLUME, volume);
                 storage(STORAGE.MUTED, !volume || muted);
             });
             if (cfg.saveTime) {
-                storage(STORAGE.SRC, this.media.src);
-                this.$media.on('loadeddata', function () {
-                    storage(STORAGE.SRC, this.src);
+                let src;
+                // Save on init
+                if (src = this.$media.attr('src')) {
+                    storage(STORAGE.SRC, src);
+                }
+                // Save when SRC change
+                this.$media.on('loadstart', () => {
+                    if (src = this.$media.attr('src')) {
+                        storage(STORAGE.SRC, src);
+                    }
                 });
+                // Save current time
                 this.$media.on('stimeupdate', function () {
                     storage(STORAGE.TIME, this.currentTime);
                 });
+                // Save reset time
                 this.$media.on('ended', function () {
                     storage(STORAGE.TIME, 0);
                 });
             }
-        }
-        redirectControlFocus() {
-            let $leaves = this.$c2js.find('*').filter((_, el) => !el.firstElementChild);
-            $leaves.on('focus', () => { this.$c2js.trigger('focus'); });
         }
     }
     c2js.Init = Init;
@@ -726,22 +750,11 @@ exports.c2js = c2js;
                     }
                 });
             }
-            prop(name, value) {
-                if (this.empty()) {
-                    return;
-                }
-                if (!isSet(value)) {
-                    return this.first()[name];
-                }
-                return this.each((_, el) => {
-                    el[name] = value;
-                });
-            }
             val(value) {
                 if (!isSet(value)) {
-                    return this.prop('value');
+                    return this.first().value;
                 }
-                this.prop('value', value);
+                this.first().value = value;
             }
             text(text) {
                 if (isSet(text)) {
@@ -789,14 +802,8 @@ exports.c2js = c2js;
                 this.each((i, el) => { filter.call(el, i, el) && list.push(el); });
                 return c2(list);
             }
-            get(index) {
-                if (index < this.list.length) {
-                    return this.list[index];
-                }
-                return void 0;
-            }
             first() {
-                return this.get(0);
+                return this.list[0];
             }
         }
         c2.Query = Query;
@@ -830,9 +837,10 @@ exports.c2js = c2js;
         function storage(key, value) {
             if (isSet(value)) {
                 localStorage.setItem(key, value);
-                return;
             }
-            return localStorage.getItem(key);
+            else {
+                return localStorage.getItem(key);
+            }
         }
         c2.storage = storage;
         function cookie(key, value) {

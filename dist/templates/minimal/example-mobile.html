@@ -28,7 +28,7 @@
         <!-- C2JS -->
         <link rel="stylesheet" href="../../web/c2.css" type="text/css" />
         <script type="text/javascript" src="../../web/c2.js"></script>
-        <script>$( () => c2js({ saveTime: true }) )</script>
+        <script>c2js({ saveTime: true, saveWith: 'cookie' })</script>
 
         <!-- C2 Theme -->
         <link rel="stylesheet" href="mobile.css" type="text/css" />
@@ -40,7 +40,7 @@
             <video c2-hide-mouse='1000' src="../assets/sample.mp4"></video>
             <div class="mm-container actived">
                 <div class="mm-top mm-row">
-                    <button c2-custom='back' c2-shortcuts='q'></button>
+                    <button c2-custom='back'></button>
                     <button c2-volume='+10%' c2-shortcuts='up'></button>
                     <button c2-custom='menu' c2-shortcuts='tab'></button>
                 </div>
@@ -61,5 +61,6 @@
                 </div>
             </div>
         </div>
+        <script src="../assets/debug.js"></script>
     </body>
 </html>
