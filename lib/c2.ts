@@ -1,7 +1,6 @@
 export function c2js(config?: c2js.Config) {
-    let elems: any = document.querySelectorAll(`[${c2js.APP_NAME}]`);
-
     c2js.ready((c2) => {
+        let elems: any = document.querySelectorAll(`[${c2js.APP_NAME}]`);
         c2.each(elems, (_, el) => {
             !el.c2js && new c2js.Init(el, config);
         });
@@ -355,9 +354,9 @@ export namespace c2js {
                         keymap.forEach((key) => {
                             this.shortcuts[key] = el;
                         });
-                        return;
+                    } else {
+                        this.shortcuts[key] = el;
                     }
-                    this.shortcuts[key] = el;
                 });
             });
         }
@@ -372,82 +371,32 @@ export namespace c2js {
             });
         }
 
-        private loadSavedInfo(): void {
-            let cfg = this.config;
-            if (cfg.saveWith === 'none') { return; }
-            
-            let storage = this.cache.storage = cfg.saveWith === 'cookie' ? c2.cookie : c2.storage,
-                volume = storage(STORAGE.VOLUME),
-                muted = storage(STORAGE.MUTED),
-                src = storage(STORAGE.SRC),
-                time = storage(STORAGE.TIME);
-
-            muted = muted === true || muted === 'true';
-
-            if (!this.media.src && isSet(src)) { this.$media.attr('src', src); }
-
-            let updateFn = () => {
-                if (isSet(volume)) { this.media.volume = volume; }
-                if (this.media.src === src && isSet(time)) { 
-                    this.media.currentTime = parseInt(time);
-
-                    // Second update fix issue "updatetime unchanged" on Edge and IE
-                    this.media.currentTime = parseInt(time) + 0.001;
-                }
-                this.media.muted = muted;
-            }
-
-            if (this.media.buffered.length) {
-                updateFn();
-                return;
-            }
-
-            this.$media.one('loadeddata', updateFn);
-        }
-
-        private bindSaveEvents(): void {
-            let cfg = this.config;
-            if (cfg.saveWith === 'none') { return; }
-
-            let storage = this.cache.storage;
-
-            this.$media.on('volumechange', function () {
-                let volume = this.volume,
-                    muted = this.muted;
-
-                storage(STORAGE.VOLUME, volume);
-                storage(STORAGE.MUTED, !volume || muted);
-            });
-
-            if (cfg.saveTime) {
-                storage(STORAGE.SRC, this.media.src);
-                this.$media.on('loadeddata', function () {
-                    storage(STORAGE.SRC, this.src);
-                });
-                this.$media.on('stimeupdate', function () {
-                    storage(STORAGE.TIME, this.currentTime);
-                });
-                this.$media.on('ended', function () {
-                    storage(STORAGE.TIME, 0);
-                });
-            }
-        }
-
         private redirectControlFocus(): void {
             let $leaves = this.$c2js.find('*').filter((_, el) => !el.firstElementChild);
             $leaves.on('focus', () => { this.$c2js.trigger('focus'); });
         }
 
         private ctrls: ControlProperties = {
+            loading: {
+                media: {
+                    seeking: function (e) {
+                        e.$all.data('loading', true);
+                    },
+                    canplay: function (e) {
+                        e.$all.data('loading', false);
+                    }
+                }
+            },
+
             play: {
                 events: {
                     click: function (e) {
-                        if (!e.$media.attr('src')) {
+                        if (e.$media.attr('src')) {
+                            e.media.paused ? e.media.play() : e.media.pause();
+                        } else {
                             e.$media.trigger('error');
                             console.error('Trying to play/pause media without source.');
-                            return;
                         }
-                        e.media.paused ? e.media.play() : e.media.pause();
                     }
                 },
                 media: {
@@ -521,8 +470,7 @@ export namespace c2js {
                 },
                 media: {
                     'loadeddata volumechange': function (e) {
-                        let muted = !e.media.volume || e.media.muted;
-                        e.$all.data('mute', muted);
+                        e.$all.data('mute', !e.media.volume || e.media.muted);
                     }
                 }
             },
@@ -565,7 +513,7 @@ export namespace c2js {
                     setSeek: function (el, media) {
                         let max = parseFloat(c2(el).attr('max')),
                             value = media.currentTime * max / media.duration;
-                        c2(el).val(value);
+                        c2(el).val(value || 0);
                     }
                 },
                 ready: function (e) {
@@ -604,24 +552,24 @@ export namespace c2js {
                         if (media.muted && !value) { return; }
     
                         let max = c2(el).attr('max');
-                        media.volume = value / max;
+                        media.volume = (value / max) || 0;
                         media.muted = !media.volume;
                     },
                     setSeek: function (el, media) {
                         if (media.muted) {
                             c2(el).val(0);
-                            return;
+                        } else {
+                            let max = c2(el).attr('max');
+                            c2(el).val(media.volume * max);
                         }
     
-                        let max = c2(el).attr('max');
-                        c2(el).val(media.volume * max);
                     }
                 },
                 ready: function (e) {
                     e.$all.each((_, el) => {
-                        c2(el).attrIfNotExists('step', 5);
-                        c2(el).attrIfNotExists('max', 100);
-                        c2(el).val(0);
+                        c2(el)  .attrIfNotExists('step', 5)
+                                .attrIfNotExists('max', 100)
+                                .val(0);
                     });
                 },
                 events: {
@@ -677,10 +625,9 @@ export namespace c2js {
                             
                             if (attr) {
                                 c2(el).attr(attr, convertTime(time));
-                                return;
+                            } else {
+                                c2(el).text(convertTime(time));
                             }
-
-                            c2(el).text(convertTime(time));
                         });
                     }
                 }
@@ -743,6 +690,76 @@ export namespace c2js {
 
             custom: {}
         };
+
+        private loadSavedInfo(): void {
+            let cfg = this.config;
+            if (cfg.saveWith === 'none') { return; }
+            
+            let storage = this.cache.storage = cfg.saveWith === 'cookie' ? c2.cookie : c2.storage,
+                volume = storage(STORAGE.VOLUME),
+                muted = storage(STORAGE.MUTED),
+                src = storage(STORAGE.SRC),
+                time = storage(STORAGE.TIME);
+
+            if (isSet(volume)) { this.media.volume = volume; }
+            this.media.muted = muted === true || muted === 'true';
+
+            if (!isSet(src)) { return; }
+
+            let actualSrc = this.$media.attr('src'),
+                updateTime = () => {
+                    if (this.media.src === src && isSet(time)) { 
+                        this.media.currentTime = parseInt(time);
+                        // Fix: Issue "updatetime unchanged" on Edge and IE
+                        this.media.currentTime = time + 0.001;
+                    }
+            };
+
+            // Fix: Same video loaded on start
+            if (actualSrc === src) {
+                updateTime();
+            } else if (!actualSrc) {
+                this.$media.one('loadeddata', updateTime).attr('src', src);
+            }
+        }
+
+        private bindSaveEvents(): void {
+            let cfg = this.config;
+            if (cfg.saveWith === 'none') { return; }
+
+            let storage = this.cache.storage;
+
+            this.$media.on('volumechange', function () {
+                let volume = this.volume,
+                    muted = this.muted;
+
+                // Save volume status
+                storage(STORAGE.VOLUME, volume);
+                storage(STORAGE.MUTED, !volume || muted);
+            });
+
+            if (cfg.saveTime) {
+                let src;
+                // Save on init
+                if (src = this.$media.attr('src')) {
+                    storage(STORAGE.SRC, src);
+                }
+                // Save when SRC change
+                this.$media.on('loadstart', () => {
+                    if (src = this.$media.attr('src')) {
+                        storage(STORAGE.SRC, src);
+                    }
+                });
+                // Save current time
+                this.$media.on('stimeupdate', function () {
+                    storage(STORAGE.TIME, this.currentTime);
+                });
+                // Save reset time
+                this.$media.on('ended', function () {
+                    storage(STORAGE.TIME, 0);
+                });
+            }
+        }
     }
 
     export function c2(selector: string | HTMLElement | ArrayLike<HTMLElement> | Doc, context?): c2.Query { return new c2.Query(selector, context || DOC); }
@@ -840,21 +857,11 @@ export namespace c2js {
                 });
             }
 
-            public prop(name: string, value?): any {
-                if (this.empty()) { return; }
-                if (!isSet(value)) {
-                    return this.first()[name];
-                }
-                return this.each((_, el) => {
-                    el[name] = value;
-                });
-            }
-
             public val(value?): any {
                 if (!isSet(value)) {
-                    return this.prop('value');
+                    return (<any>this.first()).value;
                 }
-                this.prop('value', value);
+                (<any>this.first()).value = value;
             }
 
             public text(text?): any {
@@ -905,15 +912,8 @@ export namespace c2js {
                 return c2(list);
             }
 
-            public get(index: number): HTMLElement | Doc | Win {
-                if (index < this.list.length) {
-                    return this.list[index];
-                }
-                return void 0;
-            }
-
             public first(): HTMLElement | Doc | Win {
-                return this.get(0);
+                return this.list[0];
             }
         }
 
@@ -941,10 +941,9 @@ export namespace c2js {
         export function storage(key: string, value?: any): any {
             if (isSet(value)) {    
                 localStorage.setItem(key, value);
-                return;
+            } else {
+                return localStorage.getItem(key);
             }
-
-            return localStorage.getItem(key);
         }
 
         export function cookie(key: string, value?: any): any {
@@ -970,11 +969,7 @@ export namespace c2js {
             });
 
             // Return json or string
-            try {
-                return JSON.parse(data);
-            } catch (_) {
-                return data;
-            }
+            try { return JSON.parse(data); } catch (_) { return data; }
         }
 
         export const fn = Query.prototype;

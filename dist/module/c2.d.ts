@@ -55,10 +55,10 @@ export declare namespace c2js {
         private bindReady;
         private addShortcuts;
         private bindShortcuts;
-        private loadSavedInfo;
-        private bindSaveEvents;
         private redirectControlFocus;
         private ctrls;
+        private loadSavedInfo;
+        private bindSaveEvents;
     }
     function c2(selector: string | HTMLElement | ArrayLike<HTMLElement> | Doc, context?: any): c2.Query;
     namespace c2 {
@@ -73,14 +73,12 @@ export declare namespace c2js {
             empty(): boolean;
             attr(name: string, value?: any): any;
             attrIfNotExists(attr: string, value: any): Query;
-            prop(name: string, value?: any): any;
             val(value?: any): any;
             text(text?: any): any;
             css(styleName: any, value?: any): any;
             find(selector: string): Query;
             findOne(selector: string): Query;
             filter(filter: (i: number, el: HTMLElement) => boolean): Query;
-            get(index: number): HTMLElement | Doc | Win;
             first(): HTMLElement | Doc | Win;
         }
         function each(arrLike: ArrayLikeObject, iterator: any): any;
