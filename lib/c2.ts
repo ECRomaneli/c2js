@@ -222,9 +222,6 @@ export namespace c2js {
         public constructor(el, config?: Config, onReady?: Function) {
             let _this = this;
 
-            // If selector is passed, get element
-            el = c2(el).first();
-
             c2.fn.data = function (ctrlType: string, value?) {        
                 if (value === void 0) {
                     return c2(this).attr('c2-' + ctrlType);
@@ -236,14 +233,14 @@ export namespace c2js {
                     _this.rmStatus(ctrlType);
                 }
 
-                c2(this).attr('c2-' + ctrlType, value);
+                return c2(this).attr('c2-' + ctrlType, value);
             }
 
             el.c2js = true;
             this.status = '';
             this.shortcuts = [];
-            this.$c2js = c2(el),
-            this.c2js = el,
+            this.c2js = <HTMLElement> c2(el).first(),
+            this.$c2js = c2(this.c2js),
             this.$media = this.$c2js.findOne('video, audio'),
             this.media = <HTMLMediaElement> this.$media.first();
 
@@ -291,17 +288,26 @@ export namespace c2js {
             };
         }
 
+        private getAll(ctrlType) {
+            return this.ctrls[ctrlType].helpers.$all;
+        }
+
+        private setStatus(): void {
+            this.$c2js.data('status', this.status);
+            this.getAll('status').data('status', this.status);
+        }
+
         private addStatus(status: string): void {
             if (this.hasStatus(status)) { return; }
             this.status += ' ' + status;
             this.status = this.status.trim();
-            this.$c2js.data('status', this.status);
+            this.setStatus();
         }
 
         private rmStatus(status: string): void {
             let rmRegExp = new RegExp(`\\s?(${status})`);
             this.status = this.status.replace(rmRegExp, '').trim();
-            this.$c2js.data('status', this.status);
+            this.setStatus();
         }
 
         private hasStatus(status: string): boolean {
@@ -718,6 +724,8 @@ export namespace c2js {
                     }
                 }
             },
+
+            status: {},
 
             custom: {}
         };
