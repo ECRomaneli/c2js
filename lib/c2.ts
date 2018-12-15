@@ -1,10 +1,5 @@
-export function c2js(config?: c2js.Config) {
-    c2js.ready((c2) => {
-        let elems: any = document.querySelectorAll(`[${c2js.APP_NAME}]`);
-        c2.each(elems, (_, el) => {
-            !el.c2js && new c2js.Init(el, config);
-        });
-    });
+export function c2js(el: any, config?: c2js.Config, onReady?: c2js.OnReady) {
+    c2js.ready(() => { new c2js.Init(el, config, onReady); });
 }
 
 export namespace c2js {
@@ -23,6 +18,7 @@ export namespace c2js {
         context: c2js.Init,
         [key: string]: any
     }
+    export type OnReady = (c2js: c2js.Init) => void;
     type ArrayLikeObject = { [key: string]: any, length?: number };
     type Handler = (event?: C2Event) => void;
     type ControlProperty = {
@@ -33,18 +29,26 @@ export namespace c2js {
     };
     type ControlProperties = { [key: string]: ControlProperty };
     type BrokenNumber = { signal?: string, number: number, type?: string };
-    interface Doc extends Document { [key: string]: any; }
-    interface Win extends Window { [key: string]: any; }
+    export interface DOC extends Document { [key: string]: any; }
+    export interface WIN extends Window { [key: string]: any; }
 
     export const APP_NAME = 'c2js';
-    export const DOC: Doc = document;
-    export const WIN: Win = window;
+    const DOC: DOC = document;
+    const WIN: WIN = window;
 
     enum STORAGE {
         VOLUME = '_C2.VOLUME',
         MUTED = '_C2.MUTED',
         TIME = '_C2.CURRENT_TIME',
         SRC = '_C2.SOURCE'
+    }
+
+    enum MEDIASTATE {
+        HAVE_NOTHING = 0,	    // No information is available.
+        HAVE_METADATA = 1,	    // Enough media has been retrieved to the metadata are initialized. Seeking will works.
+        HAVE_CURRENT_DATA = 2,	// Current frame loaded. 
+        HAVE_FUTURE_DATA = 3,	// At least two frames loaded.
+        HAVE_ENOUGH_DATA = 4	// Enough data is available for downloading media to the end without interruption.
     }
 
     const SEEK_DATA = { seeking: false, last: void 0 };
@@ -59,20 +63,84 @@ export namespace c2js {
         right:  ['right',   'arrowright'],
         down:   ['down',    'arrowdown' ]
     };
-    const DEFAULT_CONFIG: Config = {
-        saveWith: window.localStorage ? 'localStorage' : 'cookie',
-        saveTime: false,
-        speed: { min: 0, max: 3 }
+    const DEFAULT_CONFIG: Config = { saveTime: false, speed: { min: 0, max: 3 } };
+
+    try {
+        DEFAULT_CONFIG.saveWith = localStorage ? 'localStorage' : 'cookie';
+    } catch (e) {
+        DEFAULT_CONFIG.saveWith = 'cookie';
     }
 
-    let FS_VAR;
+    var FS_VAR;
 
-    export function ready(fn: any): void {
-        if (document.readyState !== 'loading') {
-            fn(c2js.c2);
+    // Verify if browser allow fullscreen and set the navPrefix and
+    // fullscreen functions
+    function allowFullscreen(): boolean {
+        if (FS_VAR) { return FS_VAR.allowed; }
+
+        let FN: string[], $DOC = c2(DOC);
+
+        if (DOC.webkitFullscreenEnabled) {
+            FN = [
+                'webkitRequestFullscreen','webkitExitFullscreen',
+                'webkitFullscreenElement','webkitfullscreenchange',
+                'webkitfullscreenerror'
+            ];
+        } else if (DOC.webkitCancelFullScreen) {
+            FN = [
+                'webkitRequestFullScreen','webkitCancelFullScreen',
+                'webkitCurrentFullScreenElement','webkitfullscreenchange',
+                'webkitfullscreenerror'
+            ];
+        } else if (DOC.mozFullScreenEnabled) {
+            FN = [
+                'mozRequestFullScreen','mozCancelFullScreen',
+                'mozFullScreenElement','mozfullscreenchange',
+                'mozfullscreenerror'
+            ];
+        } else if (DOC.msFullscreenEnabled) {
+            FN = [
+                'msRequestFullscreen','msExitFullscreen',
+                'msFullscreenElement','MSFullscreenChange',
+                'MSFullscreenError'
+            ];
+        } else if (DOC.fullscreenEnabled) {
+            FN = [
+                'requestFullscreen','exitFullscreen',
+                'fullscreenElement','fullscreenchange',
+                'fullscreenerror'
+            ];
         } else {
-            document.addEventListener('DOMContentLoaded', () => { fn(c2js.c2); });
+            FS_VAR = { allowed: false };
+            return false;
         }
+
+        FS_VAR = {
+            allowed: true,
+            enter: (el) => { el[FN[0]](); },
+            leave: () => { DOC[FN[1]](); },
+            check: () => DOC[FN[2]],
+            onChange: (h) => { $DOC.on(FN[3], h); },
+            onError: (h) => { $DOC.on(FN[4], h); }
+        };
+
+        return true;
+    }
+
+    export function ready(fn: Function): void {
+        if (DOC.readyState !== 'loading') {
+            fn();
+        } else {
+            DOC.addEventListener('DOMContentLoaded', () => { fn(); });
+        }
+    }
+
+    export function startAll(config?: c2js.Config, onReady?: c2js.OnReady) {
+        ready(() => {
+            c2(`[${APP_NAME}]`).each((_, el) => {
+                !(<any>el).c2js && new c2js.Init(el, config, onReady);
+            });
+        });
     }
 
     // toggle values passed by param
@@ -137,59 +205,9 @@ export namespace c2js {
         return date.toISOString().substr(ISORange[0], ISORange[1]);
     }
 
-    // Verify if browser allow fullscreen and set the navPrefix and
-    // fullscreen functions
-    function allowFullscreen(): boolean {
-        if (FS_VAR) { return FS_VAR.allowed; }
-
-        let FN: string[], $DOC = c2(DOC);
-
-        if (DOC.webkitFullscreenEnabled) {
-            FN = [
-                'webkitRequestFullscreen','webkitExitFullscreen',
-                'webkitFullscreenElement','webkitfullscreenchange',
-                'webkitfullscreenerror'
-            ];
-        } else if (DOC.webkitCancelFullScreen) {
-            FN = [
-                'webkitRequestFullScreen','webkitCancelFullScreen',
-                'webkitCurrentFullScreenElement','webkitfullscreenchange',
-                'webkitfullscreenerror'
-            ];
-        } else if (DOC.mozFullScreenEnabled) {
-            FN = [
-                'mozRequestFullScreen','mozCancelFullScreen',
-                'mozFullScreenElement','mozfullscreenchange',
-                'mozfullscreenerror'
-            ];
-        } else if (DOC.msFullscreenEnabled) {
-            FN = [
-                'msRequestFullscreen','msExitFullscreen',
-                'msFullscreenElement','MSFullscreenChange',
-                'MSFullscreenError'
-            ];
-        } else if (DOC.fullscreenEnabled) {
-            FN = [
-                'requestFullscreen','exitFullscreen',
-                'fullscreenElement','fullscreenchange',
-                'fullscreenerror'
-            ];
-        } else {
-            FS_VAR = { allowed: false };
-            return false;
-        }
-
-        FS_VAR = {
-            allowed: true,
-            enter: (el) => { el[FN[0]](); },
-            leave: () => { DOC[FN[1]](); },
-            check: () => DOC[FN[2]],
-            onChange: (h) => { $DOC.on(FN[3], h); },
-            onError: (h) => { $DOC.on(FN[4], h); }
-        };
-
-        return true;
-    }
+    function isSubstr(str: string, substr: string): boolean {
+        return str.indexOf(substr) !== -1;
+    } 
 
     export class Init {
         private status: string;
@@ -201,8 +219,7 @@ export namespace c2js {
         private config: Config;
         private cache: any = {};
 
-        
-        public constructor(el, config?: Config) {
+        public constructor(el, config?: Config, onReady?: Function) {
             let _this = this;
 
             c2.fn.data = function (ctrlType: string, value?) {        
@@ -216,14 +233,14 @@ export namespace c2js {
                     _this.rmStatus(ctrlType);
                 }
 
-                c2(this).attr('c2-' + ctrlType, value);
+                return c2(this).attr('c2-' + ctrlType, value);
             }
 
             el.c2js = true;
             this.status = '';
             this.shortcuts = [];
-            this.$c2js = c2(el),
-            this.c2js = el,
+            this.c2js = <HTMLElement> c2(el).first(),
+            this.$c2js = c2(this.c2js),
             this.$media = this.$c2js.findOne('video, audio'),
             this.media = <HTMLMediaElement> this.$media.first();
 
@@ -244,6 +261,12 @@ export namespace c2js {
             this.initControls();
             this.loadSavedInfo();
             this.bindSaveEvents();
+
+            onReady && onReady(this.$c2js.attr('c2js'), this);
+        }
+
+        private readyStateAtLeast(id) {
+            return this.media.readyState >= id;
         }
 
         private searchCtrl(ctrlType: string): c2.Query {
@@ -265,21 +288,30 @@ export namespace c2js {
             };
         }
 
+        private getAll(ctrlType) {
+            return this.ctrls[ctrlType].helpers.$all;
+        }
+
+        private setStatus(): void {
+            this.$c2js.data('status', this.status);
+            this.getAll('status').data('status', this.status);
+        }
+
         private addStatus(status: string): void {
             if (this.hasStatus(status)) { return; }
             this.status += ' ' + status;
             this.status = this.status.trim();
-            this.$c2js.attr('c2-status', this.status);
+            this.setStatus();
         }
 
         private rmStatus(status: string): void {
             let rmRegExp = new RegExp(`\\s?(${status})`);
             this.status = this.status.replace(rmRegExp, '').trim();
-            this.$c2js.attr('c2-status', this.status);
+            this.setStatus();
         }
 
         private hasStatus(status: string): boolean {
-            return this.status.indexOf(status) !== -1;
+            return isSubstr(this.status, status);
         }
 
         private initControls(): void {
@@ -324,14 +356,14 @@ export namespace c2js {
         }
 
         private bindMedia(property: ControlProperty): void {
-            // IMPROVEIT: See other properties more reliable than this
-            let loadedData = this.media.buffered.length;
+            // TESTING
+            let loadedData = this.readyStateAtLeast(MEDIASTATE.HAVE_CURRENT_DATA);
 
             c2.each(property.media, (event, handler) => {
                 handler = this.createHandler(handler, property);
 
                 // Fix crash when video loads before c2js
-                if (event.indexOf('loadeddata') !== -1) {
+                if (isSubstr(event, 'loadeddata') && loadedData) {
                     if (loadedData) { handler(); }
                 }
 
@@ -345,17 +377,21 @@ export namespace c2js {
 
         private addShortcuts($ctrls: c2.Query): void {
             $ctrls.each((_, el) => {
-                let keys: any = c2(el).data('shortcuts'), keymap;
+                let keys = c2(el).data('shortcuts');
                 if (!keys) { return; }
 
-                keys = keys.toLowerCase().split(' ');
-                keys.forEach((key) => {
-                    if (keymap = KEYMAP[key]) {
-                        keymap.forEach((key) => {
+                keys.toLowerCase().split(' ').forEach((key) => {
+                    if (key === 'dblclick') {
+                        let $el = c2(el);
+                        this.$c2js.on(key, (e) => {
+                            if (!e.target.hasOnClick) {
+                                $el.trigger('click');
+                            }
+                        }, true);
+                    } else {
+                        (KEYMAP[key] || [key]).forEach((key) => {
                             this.shortcuts[key] = el;
                         });
-                    } else {
-                        this.shortcuts[key] = el;
                     }
                 });
             });
@@ -372,17 +408,19 @@ export namespace c2js {
         }
 
         private redirectControlFocus(): void {
-            let $leaves = this.$c2js.find('*').filter((_, el) => !el.firstElementChild);
-            $leaves.on('focus', () => { this.$c2js.trigger('focus'); });
+            this.$c2js.on('focus', (e) => {
+                this.c2js.focus();
+                e.stopPropagation();
+            }, true);
         }
 
         private ctrls: ControlProperties = {
             loading: {
                 media: {
-                    seeking: function (e) {
+                    'loadstart seeking waiting': function (e) {
                         e.$all.data('loading', true);
                     },
-                    canplay: function (e) {
+                    'canplay error': function (e) {
                         e.$all.data('loading', false);
                     }
                 }
@@ -405,6 +443,9 @@ export namespace c2js {
                     },
                     pause: function (e) {
                         e.$all.data('play', false);
+                    },
+                    error: function (e) {
+                        e.$all.data('play', 'null');
                     }
                 }
             },
@@ -421,10 +462,8 @@ export namespace c2js {
                     play: function (e) {
                         e.$all.data('stop', false);
                     },
-
-                    'loadeddata ended abort error': function (e) {
+                    'loadeddata ended error': function (e) {
                         if (!e.context.hasStatus('stop')) {
-                            if (!e.media.paused) { e.media.pause(); }
                             e.$all.data('stop', true);
                         }
                     }
@@ -518,9 +557,9 @@ export namespace c2js {
                 },
                 ready: function (e) {
                     e.$all.each(function (_, el) {
-                        c2(el).attrIfNotExists('step', 0.1);
-                        c2(el).attrIfNotExists('max', 100);
-                        c2(el).val(0);
+                        c2(el)  .attrIfNotExists('step', 0.1)
+                                .attrIfNotExists('max', 100)
+                                .val(0);
                     });
                 },
                 events: {
@@ -535,7 +574,7 @@ export namespace c2js {
                     }
                 },
                 media: {
-                    'loadeddata timeupdate': function (e) {
+                    'loadeddata timeupdate seeked': function (e) {
                         if (!SEEK_DATA.seeking) {
                             e.$all.each((_, el) => {
                                 e.setSeek(el, e.media);
@@ -688,6 +727,8 @@ export namespace c2js {
                 }
             },
 
+            status: {},
+
             custom: {}
         };
 
@@ -704,22 +745,29 @@ export namespace c2js {
             if (isSet(volume)) { this.media.volume = volume; }
             this.media.muted = muted === true || muted === 'true';
 
+            // If src not exists, dont change the time
             if (!isSet(src)) { return; }
 
-            let actualSrc = this.$media.attr('src'),
-                updateTime = () => {
-                    if (!isSet(time)) { return; }
-                    // Fix: Issue "updatetime unchanged" on Edge and IE
-                    this.media.currentTime = parseInt(time);
-                    this.media.currentTime = time + 0.001;
+            // If the src of the video exists and is different, dont change the time
+            let actualSrc = this.$media.attr('src');
+            if (actualSrc && actualSrc !== src) { return; }
+
+            let updateTime = () => {
+                if (!isSet(time)) { return; }
+                this.media.pause();
+                // FIXED: Issue "updatetime unchanged" on Edge and IE
+                this.media.currentTime = parseFloat(time);
+                this.media.currentTime += 0.001;
             };
 
-            // Fix: Same video loaded on start
-            if (actualSrc === src) {
+            // FIXED: Same video loaded on start
+            if (this.readyStateAtLeast(MEDIASTATE.HAVE_METADATA)) {
                 updateTime();
-            } else if (!actualSrc) {
-                this.$media.one('loadeddata', updateTime).attr('src', src);
+                return;    
             }
+
+            this.$media.one('loadedmetadata', updateTime);
+            if (!actualSrc) { this.$media.attr('src', src); }
         }
 
         private bindSaveEvents(): void {
@@ -761,14 +809,14 @@ export namespace c2js {
         }
     }
 
-    export function c2(selector: string | HTMLElement | ArrayLike<HTMLElement> | Doc, context?): c2.Query { return new c2.Query(selector, context || DOC); }
+    export function c2(selector: string | HTMLElement | ArrayLike<HTMLElement> | DOC, context?): c2.Query { return new c2.Query(selector, context || DOC); }
 
     export namespace c2 {
         export class Query {
             [key: string]: any;
             private list: ArrayLike<HTMLElement>;
 
-            public constructor(selector, context: Doc | HTMLElement) {
+            public constructor(selector, context: DOC | HTMLElement) {
                 if (typeof selector === 'string') {
 
                     let type = selector.match(/^([#.]?)([-\w]+)(.*)$/);
@@ -802,19 +850,28 @@ export namespace c2js {
                 return this;
             }
 
-            public on(events, fn): this {
+            public on(events, fn, capture?): this {
+                return this.eventListener('add', events, fn, capture);
+            }
+
+            public off(events, fn, capture?): this {
+                return this.eventListener('remove', events, fn, capture);
+            }
+
+            public one(events, fn, capture?): this {
+                return this.on(events, fn.$handler = function (e) {
+                    this.removeEventListener(e.type, fn.$handler, capture);
+                    return fn.apply(this, arguments);
+                }, capture);
+            }
+
+            private eventListener(type, events, fn, capture = false): this {
                 events = events.split(' ');
                 return this.each((_, el) => {
                     events.forEach((event) => {
-                        el.addEventListener(event, fn, false);
+                        if (event === 'click') { (<any>el).hasOnClick = true; }
+                        el[type + 'EventListener'](event, fn, capture);
                     });
-                });
-            }
-
-            public one(events, fn): this {
-                return this.on(events, fn.$handler = function (e) {
-                    this.removeEventListener(e.type, fn.$handler);
-                    return fn.apply(this, arguments);
                 });
             }
 
@@ -911,7 +968,7 @@ export namespace c2js {
                 return c2(list);
             }
 
-            public first(): HTMLElement | Doc | Win {
+            public first(): HTMLElement | DOC | WIN {
                 return this.list[0];
             }
         }
@@ -920,8 +977,8 @@ export namespace c2js {
             if (Array.isArray && Array.isArray(obj)) { return true }
             if (!obj) { return false }
     
-            let length = obj.length;
-            return typeof length === "number" && (length === 0 || (length > 0 && (length - 1) in obj));
+            let l = obj.length;
+            return typeof l === "number" && (l === 0 || (l > 0 && (l - 1) in obj));
         }
 
         function isSet(value): boolean {
@@ -938,11 +995,16 @@ export namespace c2js {
         }
 
         export function storage(key: string, value?: any): any {
-            if (isSet(value)) {    
-                localStorage.setItem(key, value);
-            } else {
-                return localStorage.getItem(key);
-            }
+            try {
+                if (isSet(value)) {    
+                    localStorage.setItem(key, value);
+                } else {
+                    return localStorage.getItem(key);
+                }
+            } catch (e) {
+                console.error('LocalStorage is not available and thrown an error.')
+                return '';
+            }            
         }
 
         export function cookie(key: string, value?: any): any {
@@ -960,7 +1022,7 @@ export namespace c2js {
             // Find cookie with 'name'
             rawCookies.some((cookie) => {
                 cookie = cookie.trim();
-                if (cookie.indexOf(name) === -1) { return false; }
+                if (!isSubstr(cookie, name)) { return false; }
     
                 // When find name, get data and stop each
                 data = cookie.substring(name.length, cookie.length);

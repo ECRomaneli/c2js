@@ -1,15 +1,10 @@
-function c2js(config) {
-    c2js.ready(function (c2) {
-        var elems = document.querySelectorAll("[" + c2js.APP_NAME + "]");
-        c2.each(elems, function (_, el) {
-            !el.c2js && new c2js.Init(el, config);
-        });
-    });
+function c2js(el, config, onReady) {
+    c2js.ready(function () { new c2js.Init(el, config, onReady); });
 }
-(function (c2js) {
-    c2js.APP_NAME = 'c2js';
-    c2js.DOC = document;
-    c2js.WIN = window;
+(function (c2js_1) {
+    c2js_1.APP_NAME = 'c2js';
+    var DOC = document;
+    var WIN = window;
     var STORAGE;
     (function (STORAGE) {
         STORAGE["VOLUME"] = "_C2.VOLUME";
@@ -17,6 +12,14 @@ function c2js(config) {
         STORAGE["TIME"] = "_C2.CURRENT_TIME";
         STORAGE["SRC"] = "_C2.SOURCE";
     })(STORAGE || (STORAGE = {}));
+    var MEDIASTATE;
+    (function (MEDIASTATE) {
+        MEDIASTATE[MEDIASTATE["HAVE_NOTHING"] = 0] = "HAVE_NOTHING";
+        MEDIASTATE[MEDIASTATE["HAVE_METADATA"] = 1] = "HAVE_METADATA";
+        MEDIASTATE[MEDIASTATE["HAVE_CURRENT_DATA"] = 2] = "HAVE_CURRENT_DATA";
+        MEDIASTATE[MEDIASTATE["HAVE_FUTURE_DATA"] = 3] = "HAVE_FUTURE_DATA";
+        MEDIASTATE[MEDIASTATE["HAVE_ENOUGH_DATA"] = 4] = "HAVE_ENOUGH_DATA"; // Enough data is available for downloading media to the end without interruption.
+    })(MEDIASTATE || (MEDIASTATE = {}));
     var SEEK_DATA = { seeking: false, last: void 0 };
     var KEYMAP = {
         space: [' ', 'spacebar'],
@@ -29,26 +32,92 @@ function c2js(config) {
         right: ['right', 'arrowright'],
         down: ['down', 'arrowdown']
     };
-    var DEFAULT_CONFIG = {
-        saveWith: window.localStorage ? 'localStorage' : 'cookie',
-        saveTime: false,
-        speed: { min: 0, max: 3 }
-    };
+    var DEFAULT_CONFIG = { saveTime: false, speed: { min: 0, max: 3 } };
+    try {
+        DEFAULT_CONFIG.saveWith = localStorage ? 'localStorage' : 'cookie';
+    }
+    catch (e) {
+        DEFAULT_CONFIG.saveWith = 'cookie';
+    }
     var FS_VAR;
-    function ready(fn) {
-        if (document.readyState !== 'loading') {
-            fn(c2js.c2);
+    // Verify if browser allow fullscreen and set the navPrefix and
+    // fullscreen functions
+    function allowFullscreen() {
+        if (FS_VAR) {
+            return FS_VAR.allowed;
+        }
+        var FN, $DOC = c2(DOC);
+        if (DOC.webkitFullscreenEnabled) {
+            FN = [
+                'webkitRequestFullscreen', 'webkitExitFullscreen',
+                'webkitFullscreenElement', 'webkitfullscreenchange',
+                'webkitfullscreenerror'
+            ];
+        }
+        else if (DOC.webkitCancelFullScreen) {
+            FN = [
+                'webkitRequestFullScreen', 'webkitCancelFullScreen',
+                'webkitCurrentFullScreenElement', 'webkitfullscreenchange',
+                'webkitfullscreenerror'
+            ];
+        }
+        else if (DOC.mozFullScreenEnabled) {
+            FN = [
+                'mozRequestFullScreen', 'mozCancelFullScreen',
+                'mozFullScreenElement', 'mozfullscreenchange',
+                'mozfullscreenerror'
+            ];
+        }
+        else if (DOC.msFullscreenEnabled) {
+            FN = [
+                'msRequestFullscreen', 'msExitFullscreen',
+                'msFullscreenElement', 'MSFullscreenChange',
+                'MSFullscreenError'
+            ];
+        }
+        else if (DOC.fullscreenEnabled) {
+            FN = [
+                'requestFullscreen', 'exitFullscreen',
+                'fullscreenElement', 'fullscreenchange',
+                'fullscreenerror'
+            ];
         }
         else {
-            document.addEventListener('DOMContentLoaded', function () { fn(c2js.c2); });
+            FS_VAR = { allowed: false };
+            return false;
+        }
+        FS_VAR = {
+            allowed: true,
+            enter: function (el) { el[FN[0]](); },
+            leave: function () { DOC[FN[1]](); },
+            check: function () { return DOC[FN[2]]; },
+            onChange: function (h) { $DOC.on(FN[3], h); },
+            onError: function (h) { $DOC.on(FN[4], h); }
+        };
+        return true;
+    }
+    function ready(fn) {
+        if (DOC.readyState !== 'loading') {
+            fn();
+        }
+        else {
+            DOC.addEventListener('DOMContentLoaded', function () { fn(); });
         }
     }
-    c2js.ready = ready;
+    c2js_1.ready = ready;
+    function startAll(config, onReady) {
+        ready(function () {
+            c2("[" + c2js_1.APP_NAME + "]").each(function (_, el) {
+                !el.c2js && new c2js.Init(el, config, onReady);
+            });
+        });
+    }
+    c2js_1.startAll = startAll;
     // toggle values passed by param
     function toggleVal(value, toggle) {
         return toggle[value === toggle[0] ? 1 : 0];
     }
-    c2js.toggleVal = toggleVal;
+    c2js_1.toggleVal = toggleVal;
     function isSet(obj) {
         return obj !== void 0 && obj !== null;
     }
@@ -99,73 +168,20 @@ function c2js(config) {
         }
         return date.toISOString().substr(ISORange[0], ISORange[1]);
     }
-    // Verify if browser allow fullscreen and set the navPrefix and
-    // fullscreen functions
-    function allowFullscreen() {
-        if (FS_VAR) {
-            return FS_VAR.allowed;
-        }
-        var FN, $DOC = c2(c2js.DOC);
-        if (c2js.DOC.webkitFullscreenEnabled) {
-            FN = [
-                'webkitRequestFullscreen', 'webkitExitFullscreen',
-                'webkitFullscreenElement', 'webkitfullscreenchange',
-                'webkitfullscreenerror'
-            ];
-        }
-        else if (c2js.DOC.webkitCancelFullScreen) {
-            FN = [
-                'webkitRequestFullScreen', 'webkitCancelFullScreen',
-                'webkitCurrentFullScreenElement', 'webkitfullscreenchange',
-                'webkitfullscreenerror'
-            ];
-        }
-        else if (c2js.DOC.mozFullScreenEnabled) {
-            FN = [
-                'mozRequestFullScreen', 'mozCancelFullScreen',
-                'mozFullScreenElement', 'mozfullscreenchange',
-                'mozfullscreenerror'
-            ];
-        }
-        else if (c2js.DOC.msFullscreenEnabled) {
-            FN = [
-                'msRequestFullscreen', 'msExitFullscreen',
-                'msFullscreenElement', 'MSFullscreenChange',
-                'MSFullscreenError'
-            ];
-        }
-        else if (c2js.DOC.fullscreenEnabled) {
-            FN = [
-                'requestFullscreen', 'exitFullscreen',
-                'fullscreenElement', 'fullscreenchange',
-                'fullscreenerror'
-            ];
-        }
-        else {
-            FS_VAR = { allowed: false };
-            return false;
-        }
-        FS_VAR = {
-            allowed: true,
-            enter: function (el) { el[FN[0]](); },
-            leave: function () { c2js.DOC[FN[1]](); },
-            check: function () { return c2js.DOC[FN[2]]; },
-            onChange: function (h) { $DOC.on(FN[3], h); },
-            onError: function (h) { $DOC.on(FN[4], h); }
-        };
-        return true;
+    function isSubstr(str, substr) {
+        return str.indexOf(substr) !== -1;
     }
     var Init = /** @class */ (function () {
-        function Init(el, config) {
+        function Init(el, config, onReady) {
             var _this_1 = this;
             this.cache = {};
             this.ctrls = {
                 loading: {
                     media: {
-                        seeking: function (e) {
+                        'loadstart seeking waiting': function (e) {
                             e.$all.data('loading', true);
                         },
-                        canplay: function (e) {
+                        'canplay error': function (e) {
                             e.$all.data('loading', false);
                         }
                     }
@@ -188,6 +204,9 @@ function c2js(config) {
                         },
                         pause: function (e) {
                             e.$all.data('play', false);
+                        },
+                        error: function (e) {
+                            e.$all.data('play', 'null');
                         }
                     }
                 },
@@ -205,11 +224,8 @@ function c2js(config) {
                         play: function (e) {
                             e.$all.data('stop', false);
                         },
-                        'loadeddata ended abort error': function (e) {
+                        'loadeddata ended error': function (e) {
                             if (!e.context.hasStatus('stop')) {
-                                if (!e.media.paused) {
-                                    e.media.pause();
-                                }
                                 e.$all.data('stop', true);
                             }
                         }
@@ -288,9 +304,9 @@ function c2js(config) {
                     },
                     ready: function (e) {
                         e.$all.each(function (_, el) {
-                            c2(el).attrIfNotExists('step', 0.1);
-                            c2(el).attrIfNotExists('max', 100);
-                            c2(el).val(0);
+                            c2(el).attrIfNotExists('step', 0.1)
+                                .attrIfNotExists('max', 100)
+                                .val(0);
                         });
                     },
                     events: {
@@ -305,7 +321,7 @@ function c2js(config) {
                         }
                     },
                     media: {
-                        'loadeddata timeupdate': function (e) {
+                        'loadeddata timeupdate seeked': function (e) {
                             if (!SEEK_DATA.seeking) {
                                 e.$all.each(function (_, el) {
                                     e.setSeek(el, e.media);
@@ -450,6 +466,7 @@ function c2js(config) {
                         }
                     }
                 },
+                status: {},
                 custom: {}
             };
             var _this = this;
@@ -463,13 +480,13 @@ function c2js(config) {
                 else if (value === false) {
                     _this.rmStatus(ctrlType);
                 }
-                c2(this).attr('c2-' + ctrlType, value);
+                return c2(this).attr('c2-' + ctrlType, value);
             };
             el.c2js = true;
             this.status = '';
             this.shortcuts = [];
-            this.$c2js = c2(el),
-                this.c2js = el,
+            this.c2js = c2(el).first(),
+                this.$c2js = c2(this.c2js),
                 this.$media = this.$c2js.findOne('video, audio'),
                 this.media = this.$media.first();
             this.$media.on('timeupdate', function () {
@@ -487,7 +504,11 @@ function c2js(config) {
             this.initControls();
             this.loadSavedInfo();
             this.bindSaveEvents();
+            onReady && onReady(this.$c2js.attr('c2js'), this);
         }
+        Init.prototype.readyStateAtLeast = function (id) {
+            return this.media.readyState >= id;
+        };
         Init.prototype.searchCtrl = function (ctrlType) {
             return this.$c2js.find("[c2-" + ctrlType + "]");
         };
@@ -503,21 +524,28 @@ function c2js(config) {
                 handler.call(this, h);
             };
         };
+        Init.prototype.getAll = function (ctrlType) {
+            return this.ctrls[ctrlType].helpers.$all;
+        };
+        Init.prototype.setStatus = function () {
+            this.$c2js.data('status', this.status);
+            this.getAll('status').data('status', this.status);
+        };
         Init.prototype.addStatus = function (status) {
             if (this.hasStatus(status)) {
                 return;
             }
             this.status += ' ' + status;
             this.status = this.status.trim();
-            this.$c2js.attr('c2-status', this.status);
+            this.setStatus();
         };
         Init.prototype.rmStatus = function (status) {
             var rmRegExp = new RegExp("\\s?(" + status + ")");
             this.status = this.status.replace(rmRegExp, '').trim();
-            this.$c2js.attr('c2-status', this.status);
+            this.setStatus();
         };
         Init.prototype.hasStatus = function (status) {
-            return this.status.indexOf(status) !== -1;
+            return isSubstr(this.status, status);
         };
         Init.prototype.initControls = function () {
             var _this_1 = this;
@@ -555,12 +583,12 @@ function c2js(config) {
         };
         Init.prototype.bindMedia = function (property) {
             var _this_1 = this;
-            // IMPROVEIT: See other properties more reliable than this
-            var loadedData = this.media.buffered.length;
+            // TESTING
+            var loadedData = this.readyStateAtLeast(MEDIASTATE.HAVE_CURRENT_DATA);
             c2.each(property.media, function (event, handler) {
                 handler = _this_1.createHandler(handler, property);
                 // Fix crash when video loads before c2js
-                if (event.indexOf('loadeddata') !== -1) {
+                if (isSubstr(event, 'loadeddata') && loadedData) {
                     if (loadedData) {
                         handler();
                     }
@@ -574,19 +602,23 @@ function c2js(config) {
         Init.prototype.addShortcuts = function ($ctrls) {
             var _this_1 = this;
             $ctrls.each(function (_, el) {
-                var keys = c2(el).data('shortcuts'), keymap;
+                var keys = c2(el).data('shortcuts');
                 if (!keys) {
                     return;
                 }
-                keys = keys.toLowerCase().split(' ');
-                keys.forEach(function (key) {
-                    if (keymap = KEYMAP[key]) {
-                        keymap.forEach(function (key) {
-                            _this_1.shortcuts[key] = el;
-                        });
+                keys.toLowerCase().split(' ').forEach(function (key) {
+                    if (key === 'dblclick') {
+                        var $el_1 = c2(el);
+                        _this_1.$c2js.on(key, function (e) {
+                            if (!e.target.hasOnClick) {
+                                $el_1.trigger('click');
+                            }
+                        }, true);
                     }
                     else {
-                        _this_1.shortcuts[key] = el;
+                        (KEYMAP[key] || [key]).forEach(function (key) {
+                            _this_1.shortcuts[key] = el;
+                        });
                     }
                 });
             });
@@ -603,8 +635,10 @@ function c2js(config) {
         };
         Init.prototype.redirectControlFocus = function () {
             var _this_1 = this;
-            var $leaves = this.$c2js.find('*').filter(function (_, el) { return !el.firstElementChild; });
-            $leaves.on('focus', function () { _this_1.$c2js.trigger('focus'); });
+            this.$c2js.on('focus', function (e) {
+                _this_1.c2js.focus();
+                e.stopPropagation();
+            }, true);
         };
         Init.prototype.loadSavedInfo = function () {
             var _this_1 = this;
@@ -617,23 +651,32 @@ function c2js(config) {
                 this.media.volume = volume;
             }
             this.media.muted = muted === true || muted === 'true';
+            // If src not exists, dont change the time
             if (!isSet(src)) {
                 return;
             }
-            var actualSrc = this.$media.attr('src'), updateTime = function () {
+            // If the src of the video exists and is different, dont change the time
+            var actualSrc = this.$media.attr('src');
+            if (actualSrc && actualSrc !== src) {
+                return;
+            }
+            var updateTime = function () {
                 if (!isSet(time)) {
                     return;
                 }
-                // Fix: Issue "updatetime unchanged" on Edge and IE
-                _this_1.media.currentTime = parseInt(time);
-                _this_1.media.currentTime = time + 0.001;
+                _this_1.media.pause();
+                // FIXED: Issue "updatetime unchanged" on Edge and IE
+                _this_1.media.currentTime = parseFloat(time);
+                _this_1.media.currentTime += 0.001;
             };
-            // Fix: Same video loaded on start
-            if (actualSrc === src) {
+            // FIXED: Same video loaded on start
+            if (this.readyStateAtLeast(MEDIASTATE.HAVE_METADATA)) {
                 updateTime();
+                return;
             }
-            else if (!actualSrc) {
-                this.$media.one('loadeddata', updateTime).attr('src', src);
+            this.$media.one('loadedmetadata', updateTime);
+            if (!actualSrc) {
+                this.$media.attr('src', src);
             }
         };
         Init.prototype.bindSaveEvents = function () {
@@ -673,9 +716,9 @@ function c2js(config) {
         };
         return Init;
     }());
-    c2js.Init = Init;
-    function c2(selector, context) { return new c2.Query(selector, context || c2js.DOC); }
-    c2js.c2 = c2;
+    c2js_1.Init = Init;
+    function c2(selector, context) { return new c2.Query(selector, context || DOC); }
+    c2js_1.c2 = c2;
     (function (c2) {
         var Query = /** @class */ (function () {
             function Query(selector, context) {
@@ -708,18 +751,28 @@ function c2js(config) {
                 each(this.list, handler);
                 return this;
             };
-            Query.prototype.on = function (events, fn) {
+            Query.prototype.on = function (events, fn, capture) {
+                return this.eventListener('add', events, fn, capture);
+            };
+            Query.prototype.off = function (events, fn, capture) {
+                return this.eventListener('remove', events, fn, capture);
+            };
+            Query.prototype.one = function (events, fn, capture) {
+                return this.on(events, fn.$handler = function (e) {
+                    this.removeEventListener(e.type, fn.$handler, capture);
+                    return fn.apply(this, arguments);
+                }, capture);
+            };
+            Query.prototype.eventListener = function (type, events, fn, capture) {
+                if (capture === void 0) { capture = false; }
                 events = events.split(' ');
                 return this.each(function (_, el) {
                     events.forEach(function (event) {
-                        el.addEventListener(event, fn, false);
+                        if (event === 'click') {
+                            el.hasOnClick = true;
+                        }
+                        el[type + 'EventListener'](event, fn, capture);
                     });
-                });
-            };
-            Query.prototype.one = function (events, fn) {
-                return this.on(events, fn.$handler = function (e) {
-                    this.removeEventListener(e.type, fn.$handler);
-                    return fn.apply(this, arguments);
                 });
             };
             Query.prototype.trigger = function (type) {
@@ -728,7 +781,7 @@ function c2js(config) {
                     customEvent = new CustomEvent(type, { bubbles: true, cancelable: true });
                 }
                 catch (_) {
-                    customEvent = c2js.DOC.createEvent('CustomEvent');
+                    customEvent = DOC.createEvent('CustomEvent');
                     customEvent.initCustomEvent(type, true, true, 'CustomEvent');
                 }
                 return this.each(function (_, elem) {
@@ -825,8 +878,8 @@ function c2js(config) {
             if (!obj) {
                 return false;
             }
-            var length = obj.length;
-            return typeof length === "number" && (length === 0 || (length > 0 && (length - 1) in obj));
+            var l = obj.length;
+            return typeof l === "number" && (l === 0 || (l > 0 && (l - 1) in obj));
         }
         function isSet(value) {
             return value !== void 0;
@@ -846,27 +899,33 @@ function c2js(config) {
         }
         c2.each = each;
         function storage(key, value) {
-            if (isSet(value)) {
-                localStorage.setItem(key, value);
+            try {
+                if (isSet(value)) {
+                    localStorage.setItem(key, value);
+                }
+                else {
+                    return localStorage.getItem(key);
+                }
             }
-            else {
-                return localStorage.getItem(key);
+            catch (e) {
+                console.error('LocalStorage is not available and thrown an error.');
+                return '';
             }
         }
         c2.storage = storage;
         function cookie(key, value) {
             if (isSet(value)) {
-                c2js.DOC.cookie = key + "=" + JSON.stringify(value) + "; path=/;";
+                DOC.cookie = key + "=" + JSON.stringify(value) + "; path=/;";
                 return;
             }
             // Create name
             var name = key + "=", data;
             // Split cookies by ';'
-            var rawCookies = c2js.DOC.cookie.split(';');
+            var rawCookies = DOC.cookie.split(';');
             // Find cookie with 'name'
             rawCookies.some(function (cookie) {
                 cookie = cookie.trim();
-                if (cookie.indexOf(name) === -1) {
+                if (!isSubstr(cookie, name)) {
                     return false;
                 }
                 // When find name, get data and stop each
@@ -883,5 +942,5 @@ function c2js(config) {
         }
         c2.cookie = cookie;
         c2.fn = Query.prototype;
-    })(c2 = c2js.c2 || (c2js.c2 = {}));
+    })(c2 = c2js_1.c2 || (c2js_1.c2 = {}));
 })(c2js || (c2js = {}));

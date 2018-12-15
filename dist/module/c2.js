@@ -1,18 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-function c2js(config) {
-    c2js.ready((c2) => {
-        let elems = document.querySelectorAll(`[${c2js.APP_NAME}]`);
-        c2.each(elems, (_, el) => {
-            !el.c2js && new c2js.Init(el, config);
-        });
-    });
+function c2js(el, config, onReady) {
+    c2js.ready(() => { new c2js.Init(el, config, onReady); });
 }
 exports.c2js = c2js;
-(function (c2js) {
-    c2js.APP_NAME = 'c2js';
-    c2js.DOC = document;
-    c2js.WIN = window;
+(function (c2js_1) {
+    c2js_1.APP_NAME = 'c2js';
+    const DOC = document;
+    const WIN = window;
     let STORAGE;
     (function (STORAGE) {
         STORAGE["VOLUME"] = "_C2.VOLUME";
@@ -20,6 +15,14 @@ exports.c2js = c2js;
         STORAGE["TIME"] = "_C2.CURRENT_TIME";
         STORAGE["SRC"] = "_C2.SOURCE";
     })(STORAGE || (STORAGE = {}));
+    let MEDIASTATE;
+    (function (MEDIASTATE) {
+        MEDIASTATE[MEDIASTATE["HAVE_NOTHING"] = 0] = "HAVE_NOTHING";
+        MEDIASTATE[MEDIASTATE["HAVE_METADATA"] = 1] = "HAVE_METADATA";
+        MEDIASTATE[MEDIASTATE["HAVE_CURRENT_DATA"] = 2] = "HAVE_CURRENT_DATA";
+        MEDIASTATE[MEDIASTATE["HAVE_FUTURE_DATA"] = 3] = "HAVE_FUTURE_DATA";
+        MEDIASTATE[MEDIASTATE["HAVE_ENOUGH_DATA"] = 4] = "HAVE_ENOUGH_DATA"; // Enough data is available for downloading media to the end without interruption.
+    })(MEDIASTATE || (MEDIASTATE = {}));
     const SEEK_DATA = { seeking: false, last: void 0 };
     const KEYMAP = {
         space: [' ', 'spacebar'],
@@ -32,26 +35,92 @@ exports.c2js = c2js;
         right: ['right', 'arrowright'],
         down: ['down', 'arrowdown']
     };
-    const DEFAULT_CONFIG = {
-        saveWith: window.localStorage ? 'localStorage' : 'cookie',
-        saveTime: false,
-        speed: { min: 0, max: 3 }
-    };
-    let FS_VAR;
-    function ready(fn) {
-        if (document.readyState !== 'loading') {
-            fn(c2js.c2);
+    const DEFAULT_CONFIG = { saveTime: false, speed: { min: 0, max: 3 } };
+    try {
+        DEFAULT_CONFIG.saveWith = localStorage ? 'localStorage' : 'cookie';
+    }
+    catch (e) {
+        DEFAULT_CONFIG.saveWith = 'cookie';
+    }
+    var FS_VAR;
+    // Verify if browser allow fullscreen and set the navPrefix and
+    // fullscreen functions
+    function allowFullscreen() {
+        if (FS_VAR) {
+            return FS_VAR.allowed;
+        }
+        let FN, $DOC = c2(DOC);
+        if (DOC.webkitFullscreenEnabled) {
+            FN = [
+                'webkitRequestFullscreen', 'webkitExitFullscreen',
+                'webkitFullscreenElement', 'webkitfullscreenchange',
+                'webkitfullscreenerror'
+            ];
+        }
+        else if (DOC.webkitCancelFullScreen) {
+            FN = [
+                'webkitRequestFullScreen', 'webkitCancelFullScreen',
+                'webkitCurrentFullScreenElement', 'webkitfullscreenchange',
+                'webkitfullscreenerror'
+            ];
+        }
+        else if (DOC.mozFullScreenEnabled) {
+            FN = [
+                'mozRequestFullScreen', 'mozCancelFullScreen',
+                'mozFullScreenElement', 'mozfullscreenchange',
+                'mozfullscreenerror'
+            ];
+        }
+        else if (DOC.msFullscreenEnabled) {
+            FN = [
+                'msRequestFullscreen', 'msExitFullscreen',
+                'msFullscreenElement', 'MSFullscreenChange',
+                'MSFullscreenError'
+            ];
+        }
+        else if (DOC.fullscreenEnabled) {
+            FN = [
+                'requestFullscreen', 'exitFullscreen',
+                'fullscreenElement', 'fullscreenchange',
+                'fullscreenerror'
+            ];
         }
         else {
-            document.addEventListener('DOMContentLoaded', () => { fn(c2js.c2); });
+            FS_VAR = { allowed: false };
+            return false;
+        }
+        FS_VAR = {
+            allowed: true,
+            enter: (el) => { el[FN[0]](); },
+            leave: () => { DOC[FN[1]](); },
+            check: () => DOC[FN[2]],
+            onChange: (h) => { $DOC.on(FN[3], h); },
+            onError: (h) => { $DOC.on(FN[4], h); }
+        };
+        return true;
+    }
+    function ready(fn) {
+        if (DOC.readyState !== 'loading') {
+            fn();
+        }
+        else {
+            DOC.addEventListener('DOMContentLoaded', () => { fn(); });
         }
     }
-    c2js.ready = ready;
+    c2js_1.ready = ready;
+    function startAll(config, onReady) {
+        ready(() => {
+            c2(`[${c2js_1.APP_NAME}]`).each((_, el) => {
+                !el.c2js && new c2js.Init(el, config, onReady);
+            });
+        });
+    }
+    c2js_1.startAll = startAll;
     // toggle values passed by param
     function toggleVal(value, toggle) {
         return toggle[value === toggle[0] ? 1 : 0];
     }
-    c2js.toggleVal = toggleVal;
+    c2js_1.toggleVal = toggleVal;
     function isSet(obj) {
         return obj !== void 0 && obj !== null;
     }
@@ -102,72 +171,19 @@ exports.c2js = c2js;
         }
         return date.toISOString().substr(ISORange[0], ISORange[1]);
     }
-    // Verify if browser allow fullscreen and set the navPrefix and
-    // fullscreen functions
-    function allowFullscreen() {
-        if (FS_VAR) {
-            return FS_VAR.allowed;
-        }
-        let FN, $DOC = c2(c2js.DOC);
-        if (c2js.DOC.webkitFullscreenEnabled) {
-            FN = [
-                'webkitRequestFullscreen', 'webkitExitFullscreen',
-                'webkitFullscreenElement', 'webkitfullscreenchange',
-                'webkitfullscreenerror'
-            ];
-        }
-        else if (c2js.DOC.webkitCancelFullScreen) {
-            FN = [
-                'webkitRequestFullScreen', 'webkitCancelFullScreen',
-                'webkitCurrentFullScreenElement', 'webkitfullscreenchange',
-                'webkitfullscreenerror'
-            ];
-        }
-        else if (c2js.DOC.mozFullScreenEnabled) {
-            FN = [
-                'mozRequestFullScreen', 'mozCancelFullScreen',
-                'mozFullScreenElement', 'mozfullscreenchange',
-                'mozfullscreenerror'
-            ];
-        }
-        else if (c2js.DOC.msFullscreenEnabled) {
-            FN = [
-                'msRequestFullscreen', 'msExitFullscreen',
-                'msFullscreenElement', 'MSFullscreenChange',
-                'MSFullscreenError'
-            ];
-        }
-        else if (c2js.DOC.fullscreenEnabled) {
-            FN = [
-                'requestFullscreen', 'exitFullscreen',
-                'fullscreenElement', 'fullscreenchange',
-                'fullscreenerror'
-            ];
-        }
-        else {
-            FS_VAR = { allowed: false };
-            return false;
-        }
-        FS_VAR = {
-            allowed: true,
-            enter: (el) => { el[FN[0]](); },
-            leave: () => { c2js.DOC[FN[1]](); },
-            check: () => c2js.DOC[FN[2]],
-            onChange: (h) => { $DOC.on(FN[3], h); },
-            onError: (h) => { $DOC.on(FN[4], h); }
-        };
-        return true;
+    function isSubstr(str, substr) {
+        return str.indexOf(substr) !== -1;
     }
     class Init {
-        constructor(el, config) {
+        constructor(el, config, onReady) {
             this.cache = {};
             this.ctrls = {
                 loading: {
                     media: {
-                        seeking: function (e) {
+                        'loadstart seeking waiting': function (e) {
                             e.$all.data('loading', true);
                         },
-                        canplay: function (e) {
+                        'canplay error': function (e) {
                             e.$all.data('loading', false);
                         }
                     }
@@ -190,6 +206,9 @@ exports.c2js = c2js;
                         },
                         pause: function (e) {
                             e.$all.data('play', false);
+                        },
+                        error: function (e) {
+                            e.$all.data('play', 'null');
                         }
                     }
                 },
@@ -207,11 +226,8 @@ exports.c2js = c2js;
                         play: function (e) {
                             e.$all.data('stop', false);
                         },
-                        'loadeddata ended abort error': function (e) {
+                        'loadeddata ended error': function (e) {
                             if (!e.context.hasStatus('stop')) {
-                                if (!e.media.paused) {
-                                    e.media.pause();
-                                }
                                 e.$all.data('stop', true);
                             }
                         }
@@ -290,9 +306,9 @@ exports.c2js = c2js;
                     },
                     ready: function (e) {
                         e.$all.each(function (_, el) {
-                            c2(el).attrIfNotExists('step', 0.1);
-                            c2(el).attrIfNotExists('max', 100);
-                            c2(el).val(0);
+                            c2(el).attrIfNotExists('step', 0.1)
+                                .attrIfNotExists('max', 100)
+                                .val(0);
                         });
                     },
                     events: {
@@ -307,7 +323,7 @@ exports.c2js = c2js;
                         }
                     },
                     media: {
-                        'loadeddata timeupdate': function (e) {
+                        'loadeddata timeupdate seeked': function (e) {
                             if (!SEEK_DATA.seeking) {
                                 e.$all.each((_, el) => {
                                     e.setSeek(el, e.media);
@@ -451,6 +467,7 @@ exports.c2js = c2js;
                         }
                     }
                 },
+                status: {},
                 custom: {}
             };
             let _this = this;
@@ -464,13 +481,13 @@ exports.c2js = c2js;
                 else if (value === false) {
                     _this.rmStatus(ctrlType);
                 }
-                c2(this).attr('c2-' + ctrlType, value);
+                return c2(this).attr('c2-' + ctrlType, value);
             };
             el.c2js = true;
             this.status = '';
             this.shortcuts = [];
-            this.$c2js = c2(el),
-                this.c2js = el,
+            this.c2js = c2(el).first(),
+                this.$c2js = c2(this.c2js),
                 this.$media = this.$c2js.findOne('video, audio'),
                 this.media = this.$media.first();
             this.$media.on('timeupdate', () => {
@@ -488,6 +505,10 @@ exports.c2js = c2js;
             this.initControls();
             this.loadSavedInfo();
             this.bindSaveEvents();
+            onReady && onReady(this.$c2js.attr('c2js'), this);
+        }
+        readyStateAtLeast(id) {
+            return this.media.readyState >= id;
         }
         searchCtrl(ctrlType) {
             return this.$c2js.find(`[c2-${ctrlType}]`);
@@ -504,21 +525,28 @@ exports.c2js = c2js;
                 handler.call(this, h);
             };
         }
+        getAll(ctrlType) {
+            return this.ctrls[ctrlType].helpers.$all;
+        }
+        setStatus() {
+            this.$c2js.data('status', this.status);
+            this.getAll('status').data('status', this.status);
+        }
         addStatus(status) {
             if (this.hasStatus(status)) {
                 return;
             }
             this.status += ' ' + status;
             this.status = this.status.trim();
-            this.$c2js.attr('c2-status', this.status);
+            this.setStatus();
         }
         rmStatus(status) {
             let rmRegExp = new RegExp(`\\s?(${status})`);
             this.status = this.status.replace(rmRegExp, '').trim();
-            this.$c2js.attr('c2-status', this.status);
+            this.setStatus();
         }
         hasStatus(status) {
-            return this.status.indexOf(status) !== -1;
+            return isSubstr(this.status, status);
         }
         initControls() {
             this.$c2js.attrIfNotExists('tabindex', -1);
@@ -553,12 +581,12 @@ exports.c2js = c2js;
             });
         }
         bindMedia(property) {
-            // IMPROVEIT: See other properties more reliable than this
-            let loadedData = this.media.buffered.length;
+            // TESTING
+            let loadedData = this.readyStateAtLeast(MEDIASTATE.HAVE_CURRENT_DATA);
             c2.each(property.media, (event, handler) => {
                 handler = this.createHandler(handler, property);
                 // Fix crash when video loads before c2js
-                if (event.indexOf('loadeddata') !== -1) {
+                if (isSubstr(event, 'loadeddata') && loadedData) {
                     if (loadedData) {
                         handler();
                     }
@@ -571,19 +599,23 @@ exports.c2js = c2js;
         }
         addShortcuts($ctrls) {
             $ctrls.each((_, el) => {
-                let keys = c2(el).data('shortcuts'), keymap;
+                let keys = c2(el).data('shortcuts');
                 if (!keys) {
                     return;
                 }
-                keys = keys.toLowerCase().split(' ');
-                keys.forEach((key) => {
-                    if (keymap = KEYMAP[key]) {
-                        keymap.forEach((key) => {
-                            this.shortcuts[key] = el;
-                        });
+                keys.toLowerCase().split(' ').forEach((key) => {
+                    if (key === 'dblclick') {
+                        let $el = c2(el);
+                        this.$c2js.on(key, (e) => {
+                            if (!e.target.hasOnClick) {
+                                $el.trigger('click');
+                            }
+                        }, true);
                     }
                     else {
-                        this.shortcuts[key] = el;
+                        (KEYMAP[key] || [key]).forEach((key) => {
+                            this.shortcuts[key] = el;
+                        });
                     }
                 });
             });
@@ -598,8 +630,10 @@ exports.c2js = c2js;
             });
         }
         redirectControlFocus() {
-            let $leaves = this.$c2js.find('*').filter((_, el) => !el.firstElementChild);
-            $leaves.on('focus', () => { this.$c2js.trigger('focus'); });
+            this.$c2js.on('focus', (e) => {
+                this.c2js.focus();
+                e.stopPropagation();
+            }, true);
         }
         loadSavedInfo() {
             let cfg = this.config;
@@ -611,23 +645,32 @@ exports.c2js = c2js;
                 this.media.volume = volume;
             }
             this.media.muted = muted === true || muted === 'true';
+            // If src not exists, dont change the time
             if (!isSet(src)) {
                 return;
             }
-            let actualSrc = this.$media.attr('src'), updateTime = () => {
+            // If the src of the video exists and is different, dont change the time
+            let actualSrc = this.$media.attr('src');
+            if (actualSrc && actualSrc !== src) {
+                return;
+            }
+            let updateTime = () => {
                 if (!isSet(time)) {
                     return;
                 }
-                // Fix: Issue "updatetime unchanged" on Edge and IE
-                this.media.currentTime = parseInt(time);
-                this.media.currentTime = time + 0.001;
+                this.media.pause();
+                // FIXED: Issue "updatetime unchanged" on Edge and IE
+                this.media.currentTime = parseFloat(time);
+                this.media.currentTime += 0.001;
             };
-            // Fix: Same video loaded on start
-            if (actualSrc === src) {
+            // FIXED: Same video loaded on start
+            if (this.readyStateAtLeast(MEDIASTATE.HAVE_METADATA)) {
                 updateTime();
+                return;
             }
-            else if (!actualSrc) {
-                this.$media.one('loadeddata', updateTime).attr('src', src);
+            this.$media.one('loadedmetadata', updateTime);
+            if (!actualSrc) {
+                this.$media.attr('src', src);
             }
         }
         bindSaveEvents() {
@@ -665,9 +708,9 @@ exports.c2js = c2js;
             }
         }
     }
-    c2js.Init = Init;
-    function c2(selector, context) { return new c2.Query(selector, context || c2js.DOC); }
-    c2js.c2 = c2;
+    c2js_1.Init = Init;
+    function c2(selector, context) { return new c2.Query(selector, context || DOC); }
+    c2js_1.c2 = c2;
     (function (c2) {
         class Query {
             constructor(selector, context) {
@@ -700,18 +743,27 @@ exports.c2js = c2js;
                 each(this.list, handler);
                 return this;
             }
-            on(events, fn) {
+            on(events, fn, capture) {
+                return this.eventListener('add', events, fn, capture);
+            }
+            off(events, fn, capture) {
+                return this.eventListener('remove', events, fn, capture);
+            }
+            one(events, fn, capture) {
+                return this.on(events, fn.$handler = function (e) {
+                    this.removeEventListener(e.type, fn.$handler, capture);
+                    return fn.apply(this, arguments);
+                }, capture);
+            }
+            eventListener(type, events, fn, capture = false) {
                 events = events.split(' ');
                 return this.each((_, el) => {
                     events.forEach((event) => {
-                        el.addEventListener(event, fn, false);
+                        if (event === 'click') {
+                            el.hasOnClick = true;
+                        }
+                        el[type + 'EventListener'](event, fn, capture);
                     });
-                });
-            }
-            one(events, fn) {
-                return this.on(events, fn.$handler = function (e) {
-                    this.removeEventListener(e.type, fn.$handler);
-                    return fn.apply(this, arguments);
                 });
             }
             trigger(type) {
@@ -720,7 +772,7 @@ exports.c2js = c2js;
                     customEvent = new CustomEvent(type, { bubbles: true, cancelable: true });
                 }
                 catch (_) {
-                    customEvent = c2js.DOC.createEvent('CustomEvent');
+                    customEvent = DOC.createEvent('CustomEvent');
                     customEvent.initCustomEvent(type, true, true, 'CustomEvent');
                 }
                 return this.each((_, elem) => {
@@ -815,8 +867,8 @@ exports.c2js = c2js;
             if (!obj) {
                 return false;
             }
-            let length = obj.length;
-            return typeof length === "number" && (length === 0 || (length > 0 && (length - 1) in obj));
+            let l = obj.length;
+            return typeof l === "number" && (l === 0 || (l > 0 && (l - 1) in obj));
         }
         function isSet(value) {
             return value !== void 0;
@@ -836,27 +888,33 @@ exports.c2js = c2js;
         }
         c2.each = each;
         function storage(key, value) {
-            if (isSet(value)) {
-                localStorage.setItem(key, value);
+            try {
+                if (isSet(value)) {
+                    localStorage.setItem(key, value);
+                }
+                else {
+                    return localStorage.getItem(key);
+                }
             }
-            else {
-                return localStorage.getItem(key);
+            catch (e) {
+                console.error('LocalStorage is not available and thrown an error.');
+                return '';
             }
         }
         c2.storage = storage;
         function cookie(key, value) {
             if (isSet(value)) {
-                c2js.DOC.cookie = `${key}=${JSON.stringify(value)}; path=/;`;
+                DOC.cookie = `${key}=${JSON.stringify(value)}; path=/;`;
                 return;
             }
             // Create name
             let name = `${key}=`, data;
             // Split cookies by ';'
-            let rawCookies = c2js.DOC.cookie.split(';');
+            let rawCookies = DOC.cookie.split(';');
             // Find cookie with 'name'
             rawCookies.some((cookie) => {
                 cookie = cookie.trim();
-                if (cookie.indexOf(name) === -1) {
+                if (!isSubstr(cookie, name)) {
                     return false;
                 }
                 // When find name, get data and stop each
@@ -873,5 +931,5 @@ exports.c2js = c2js;
         }
         c2.cookie = cookie;
         c2.fn = Query.prototype;
-    })(c2 = c2js.c2 || (c2js.c2 = {}));
+    })(c2 = c2js_1.c2 || (c2js_1.c2 = {}));
 })(c2js = exports.c2js || (exports.c2js = {}));

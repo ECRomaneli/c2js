@@ -29,6 +29,7 @@
 }
 
 [c2js] {
+    position: relative;
     background-color: black;
     color: white;
 }
