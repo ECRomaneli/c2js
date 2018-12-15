@@ -1,4 +1,4 @@
-export declare function c2js(config?: c2js.Config): void;
+export declare function c2js(el: any, config?: c2js.Config, onReady?: c2js.OnReady): void;
 export declare namespace c2js {
     type Config = {
         saveWith?: 'none' | 'cookie' | 'localStorage';
@@ -18,20 +18,20 @@ export declare namespace c2js {
         context: c2js.Init;
         [key: string]: any;
     };
+    type OnReady = (c2js: c2js.Init) => void;
     type ArrayLikeObject = {
         [key: string]: any;
         length?: number;
     };
-    interface Doc extends Document {
+    interface DOC extends Document {
         [key: string]: any;
     }
-    interface Win extends Window {
+    interface WIN extends Window {
         [key: string]: any;
     }
     const APP_NAME = "c2js";
-    const DOC: Doc;
-    const WIN: Win;
-    function ready(fn: any): void;
+    function ready(fn: Function): void;
+    function startAll(config?: c2js.Config, onReady?: c2js.OnReady): void;
     function toggleVal(value: any, toggle: any[]): any;
     class Init {
         private status;
@@ -42,7 +42,8 @@ export declare namespace c2js {
         private media;
         private config;
         private cache;
-        constructor(el: any, config?: Config);
+        constructor(el: any, config?: Config, onReady?: Function);
+        private readyStateAtLeast;
         private searchCtrl;
         private createHandler;
         private addStatus;
@@ -60,15 +61,17 @@ export declare namespace c2js {
         private loadSavedInfo;
         private bindSaveEvents;
     }
-    function c2(selector: string | HTMLElement | ArrayLike<HTMLElement> | Doc, context?: any): c2.Query;
+    function c2(selector: string | HTMLElement | ArrayLike<HTMLElement> | DOC, context?: any): c2.Query;
     namespace c2 {
         class Query {
             [key: string]: any;
             private list;
-            constructor(selector: any, context: Doc | HTMLElement);
+            constructor(selector: any, context: DOC | HTMLElement);
             each(handler: (i: number, el: HTMLElement) => void): this;
-            on(events: any, fn: any): this;
-            one(events: any, fn: any): this;
+            on(events: any, fn: any, capture?: any): this;
+            off(events: any, fn: any, capture?: any): this;
+            one(events: any, fn: any, capture?: any): this;
+            private eventListener;
             trigger(type: any): this;
             empty(): boolean;
             attr(name: string, value?: any): any;
@@ -79,7 +82,7 @@ export declare namespace c2js {
             find(selector: string): Query;
             findOne(selector: string): Query;
             filter(filter: (i: number, el: HTMLElement) => boolean): Query;
-            first(): HTMLElement | Doc | Win;
+            first(): HTMLElement | DOC | WIN;
         }
         function each(arrLike: ArrayLikeObject, iterator: any): any;
         function storage(key: string, value?: any): any;
