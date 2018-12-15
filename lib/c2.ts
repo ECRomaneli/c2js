@@ -756,7 +756,7 @@ export namespace c2js {
                 if (!isSet(time)) { return; }
                 this.media.pause();
                 // FIXED: Issue "updatetime unchanged" on Edge and IE
-                this.media.currentTime = parseInt(time);
+                this.media.currentTime = parseFloat(time);
                 this.media.currentTime += 0.001;
             };
 
