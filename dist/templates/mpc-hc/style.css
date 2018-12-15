@@ -111,6 +111,10 @@ button[c2-fullscreen=true] {
     background-image: url(../assets/icons/compress-solid.svg);
 }
 
+button[c2-fullscreen=null] {
+    opacity: .3;
+}
+
 span[c2-null]::after { 
     content: "Loading...";
 }

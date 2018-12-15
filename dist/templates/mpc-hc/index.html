@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../web/c2.css" type="text/css" />
+<script type="text/javascript" src="../../web/c2.js"></script>
+<script>c2js('[c2js]', { saveTime: true })</script>
+
+
+<!-- C2 Theme -->
+<link rel="stylesheet" href="style.css" type="text/css" />
+
+
+<div c2js>
+    <video src="../assets/sample.mp4" c2-play c2-hide-mouse='1000'></video>
+    <div class="c2-bar">
+        <div class="c2-controls">
+            <input c2-time-seek type="range">
+            
+            <button c2-play c2-shortcuts='space'></button>
+            <button c2-stop></button>
+            
+            <div class="c2-divider"></div>
+            
+            <button c2-move='-5' c2-shortcuts='a arrowleft'></button>
+            <button c2-move='+5' c2-shortcuts='d arrowright'></button>
+            
+            <div class="c2-divider"></div>
+            
+            <button c2-fullscreen c2-shortcuts='f enter'></button>
+            
+            <div class="c2-divider"></div>
+            
+            <div class="c2-align-right">
+                <button c2-mute c2-shortcuts='m'></button>
+                <input c2-volume-seek type="range">
+                <input type="hidden" c2-volume='-5%' c2-shortcuts='s arrowdown'>
+                <input type="hidden" c2-volume='+5%' c2-shortcuts='w arrowup'>
+            </div>
+        </div>
+
+        <div class="c2-info-bar">
+            <span c2-null c2-status c2-play c2-stop c2-mute></span>
+            <div class="c2-align-right">
+                <span c2-time='current'>00:00</span> /
+                <span c2-duration>00:00</span>
+            </div>
+        </div>
+    </div>
+</div>
