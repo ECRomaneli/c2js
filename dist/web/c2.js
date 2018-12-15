@@ -466,11 +466,10 @@ function c2js(el, config, onReady) {
                         }
                     }
                 },
+                status: {},
                 custom: {}
             };
             var _this = this;
-            // If selector is passed, get element
-            el = c2(el).first();
             c2.fn.data = function (ctrlType, value) {
                 if (value === void 0) {
                     return c2(this).attr('c2-' + ctrlType);
@@ -481,13 +480,13 @@ function c2js(el, config, onReady) {
                 else if (value === false) {
                     _this.rmStatus(ctrlType);
                 }
-                c2(this).attr('c2-' + ctrlType, value);
+                return c2(this).attr('c2-' + ctrlType, value);
             };
             el.c2js = true;
             this.status = '';
             this.shortcuts = [];
-            this.$c2js = c2(el),
-                this.c2js = el,
+            this.c2js = c2(el).first(),
+                this.$c2js = c2(this.c2js),
                 this.$media = this.$c2js.findOne('video, audio'),
                 this.media = this.$media.first();
             this.$media.on('timeupdate', function () {
@@ -525,18 +524,25 @@ function c2js(el, config, onReady) {
                 handler.call(this, h);
             };
         };
+        Init.prototype.getAll = function (ctrlType) {
+            return this.ctrls[ctrlType].helpers.$all;
+        };
+        Init.prototype.setStatus = function () {
+            this.$c2js.data('status', this.status);
+            this.getAll('status').data('status', this.status);
+        };
         Init.prototype.addStatus = function (status) {
             if (this.hasStatus(status)) {
                 return;
             }
             this.status += ' ' + status;
             this.status = this.status.trim();
-            this.$c2js.data('status', this.status);
+            this.setStatus();
         };
         Init.prototype.rmStatus = function (status) {
             var rmRegExp = new RegExp("\\s?(" + status + ")");
             this.status = this.status.replace(rmRegExp, '').trim();
-            this.$c2js.data('status', this.status);
+            this.setStatus();
         };
         Init.prototype.hasStatus = function (status) {
             return isSubstr(this.status, status);
@@ -629,8 +635,10 @@ function c2js(el, config, onReady) {
         };
         Init.prototype.redirectControlFocus = function () {
             var _this_1 = this;
-            var $leaves = this.$c2js.find('*').filter(function (_, el) { return !el.firstElementChild; });
-            $leaves.on('focus', function () { _this_1.$c2js.trigger('focus'); });
+            this.$c2js.on('focus', function (e) {
+                _this_1.c2js.focus();
+                e.stopPropagation();
+            }, true);
         };
         Init.prototype.loadSavedInfo = function () {
             var _this_1 = this;
@@ -658,7 +666,7 @@ function c2js(el, config, onReady) {
                 }
                 _this_1.media.pause();
                 // FIXED: Issue "updatetime unchanged" on Edge and IE
-                _this_1.media.currentTime = parseInt(time);
+                _this_1.media.currentTime = parseFloat(time);
                 _this_1.media.currentTime += 0.001;
             };
             // FIXED: Same video loaded on start

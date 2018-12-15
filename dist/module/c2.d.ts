@@ -46,6 +46,8 @@ export declare namespace c2js {
         private readyStateAtLeast;
         private searchCtrl;
         private createHandler;
+        private getAll;
+        private setStatus;
         private addStatus;
         private rmStatus;
         private hasStatus;
