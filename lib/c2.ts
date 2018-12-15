@@ -408,8 +408,10 @@ export namespace c2js {
         }
 
         private redirectControlFocus(): void {
-            let $leaves = this.$c2js.find('*').filter((_, el) => !el.firstElementChild);
-            $leaves.on('focus', () => { this.$c2js.trigger('focus'); });
+            this.$c2js.on('focus', (e) => {
+                this.c2js.focus();
+                e.stopPropagation();
+            }, true);
         }
 
         private ctrls: ControlProperties = {
