@@ -502,6 +502,9 @@ exports.c2js = c2js;
                     this.config[key] = value;
                 }
             });
+            this.$c2js.attrIfNotExists('tabindex', -1);
+            this.$media.attrIfNotExists('src', '')
+                .attrIfNotExists('tabindex', -1);
             this.initControls();
             this.loadSavedInfo();
             this.bindSaveEvents();
@@ -549,7 +552,6 @@ exports.c2js = c2js;
             return isSubstr(this.status, status);
         }
         initControls() {
-            this.$c2js.attrIfNotExists('tabindex', -1);
             c2.each(this.ctrls, (name, property) => {
                 let $ctrl = this.searchCtrl(name);
                 if ($ctrl) {
@@ -798,7 +800,8 @@ exports.c2js = c2js;
             }
             attrIfNotExists(attr, value) {
                 return this.each((_, el) => {
-                    if (!el.getAttribute(attr)) {
+                    let val = el.getAttribute(attr);
+                    if (val === null || val === void 0) {
                         el.setAttribute(attr, value);
                     }
                 });

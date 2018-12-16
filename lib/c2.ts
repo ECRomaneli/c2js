@@ -258,6 +258,10 @@ export namespace c2js {
                 }
             });
 
+            this.$c2js  .attrIfNotExists('tabindex', -1);
+            this.$media .attrIfNotExists('src', '')
+                        .attrIfNotExists('tabindex', -1);
+
             this.initControls();
             this.loadSavedInfo();
             this.bindSaveEvents();
@@ -315,8 +319,6 @@ export namespace c2js {
         }
 
         private initControls(): void {
-            this.$c2js.attrIfNotExists('tabindex', -1);
-
             c2.each(this.ctrls, (name, property) => {
                 let $ctrl = this.searchCtrl(name);
 
@@ -907,7 +909,8 @@ export namespace c2js {
 
             public attrIfNotExists(attr: string, value): Query {
                 return this.each((_, el) => {
-                    if (!el.getAttribute(attr)) {
+                    let val = el.getAttribute(attr);
+                    if (val === null || val === void 0) {
                         el.setAttribute(attr, value);
                     }
                 });
