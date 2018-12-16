@@ -501,6 +501,9 @@ function c2js(el, config, onReady) {
                     _this_1.config[key] = value;
                 }
             });
+            this.$c2js.attrIfNotExists('tabindex', -1);
+            this.$media.attrIfNotExists('src', '')
+                .attrIfNotExists('tabindex', -1);
             this.initControls();
             this.loadSavedInfo();
             this.bindSaveEvents();
@@ -549,7 +552,6 @@ function c2js(el, config, onReady) {
         };
         Init.prototype.initControls = function () {
             var _this_1 = this;
-            this.$c2js.attrIfNotExists('tabindex', -1);
             c2.each(this.ctrls, function (name, property) {
                 var $ctrl = _this_1.searchCtrl(name);
                 if ($ctrl) {
@@ -807,7 +809,8 @@ function c2js(el, config, onReady) {
             };
             Query.prototype.attrIfNotExists = function (attr, value) {
                 return this.each(function (_, el) {
-                    if (!el.getAttribute(attr)) {
+                    var val = el.getAttribute(attr);
+                    if (val === null || val === void 0) {
                         el.setAttribute(attr, value);
                     }
                 });
