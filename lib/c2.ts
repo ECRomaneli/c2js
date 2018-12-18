@@ -1,5 +1,45 @@
-export function c2js(el: any, config?: c2js.Config, onReady?: c2js.OnReady) {
-    c2js.ready(() => { new c2js.Init(el, config, onReady); });
+export function c2js(config?: c2js.Config, onReady?: c2js.OnReady);
+export function c2js(el: HTMLElement | string, config?: c2js.Config, onReady?: c2js.OnReady);
+/**
+ * Mix self-constructor
+ */
+export function c2js(e?, c?, o?) {
+    let isConfig = (obj) => obj.__proto__ === Object.prototype,
+        isFunction = (fn) => typeof fn === 'function',
+        startAll = (c?, o?) => {
+            c2js.c2(`[${c2js.APP_NAME}]`).each((_, el) => {
+                !el.c2 && new c2js.Init(el, c, o);
+            });
+        };
+
+    if (arguments.length === 3
+    ||  arguments.length === 2 && isConfig(c)
+    ||  arguments.length === 1 && !(isConfig(e) || isFunction(e))) {
+        c2js.DOMReady(() => { new c2js.Init(e, c, o); });
+        return;
+    }
+
+    if (arguments.length === 2) {
+        if (isConfig(e)) {
+            c2js.DOMReady(() => { startAll(e, c); });
+            return;
+        }
+
+        c2js.DOMReady(() => { new c2js.Init(e, void 0, c); });
+        return;
+    }
+
+    if (arguments.length === 1) {
+        if (isConfig(e)) {
+            c2js.DOMReady(() => { startAll(e); });
+            return;
+        }
+            
+        c2js.DOMReady(() => { startAll(void 0, e); });
+        return;
+    }
+
+    c2js.DOMReady(() => { startAll(); });
 }
 
 export namespace c2js {
@@ -7,11 +47,14 @@ export namespace c2js {
         saveWith?: 'none' | 'cookie' | 'localStorage',
         saveTime?: boolean,
         speed?: { min?: number, max?: number }
+        timer?: number,
+        timeout?: number,
+        timeFormat?: string
     };
     export type C2Event = {
         originalEvent: Event,
-        c2js: HTMLElement,
-        $c2js: c2.Query,
+        root: C2Element,
+        $root: c2.Query,
         media: HTMLMediaElement,
         $media: c2.Query,
         $all: c2.Query,
@@ -31,6 +74,7 @@ export namespace c2js {
     type BrokenNumber = { signal?: string, number: number, type?: string };
     export interface DOC extends Document { [key: string]: any; }
     export interface WIN extends Window { [key: string]: any; }
+    export interface C2Element extends HTMLElement { c2?: any; }
 
     export const APP_NAME = 'c2js';
     const DOC: DOC = document;
@@ -51,6 +95,8 @@ export namespace c2js {
         HAVE_ENOUGH_DATA = 4	// Enough data is available for downloading media to the end without interruption.
     }
 
+    const READY_INSTANCES = [];
+    const READY_HANDLERS = [];
     const SEEK_DATA = { seeking: false, last: void 0 };
     const KEYMAP = {
         space:  [' ',       'spacebar'  ],
@@ -63,8 +109,14 @@ export namespace c2js {
         right:  ['right',   'arrowright'],
         down:   ['down',    'arrowdown' ]
     };
-    const DEFAULT_CONFIG: Config = { saveTime: false, speed: { min: 0, max: 3 } };
+    const DEFAULT_CONFIG: Config = {
+        saveTime: false,
+        speed: { min: 0, max: 3 },
+        timer: 1000,
+        timeFormat: 'mm:ss'
+    };
 
+    // FIXED: On trying to access localStorage with file protocol at the Edge, thrown Exception.
     try {
         DEFAULT_CONFIG.saveWith = localStorage ? 'localStorage' : 'cookie';
     } catch (e) {
@@ -75,6 +127,7 @@ export namespace c2js {
 
     // Verify if browser allow fullscreen and set the navPrefix and
     // fullscreen functions
+    // FIX: This script dont grant if fullscreen is not supported.
     function allowFullscreen(): boolean {
         if (FS_VAR) { return FS_VAR.allowed; }
 
@@ -127,7 +180,7 @@ export namespace c2js {
         return true;
     }
 
-    export function ready(fn: Function): void {
+    export function DOMReady(fn: Function): void {
         if (DOC.readyState !== 'loading') {
             fn();
         } else {
@@ -135,12 +188,9 @@ export namespace c2js {
         }
     }
 
-    export function startAll(config?: c2js.Config, onReady?: c2js.OnReady) {
-        ready(() => {
-            c2(`[${APP_NAME}]`).each((_, el) => {
-                !(<any>el).c2js && new c2js.Init(el, config, onReady);
-            });
-        });
+    export function ready(fn: Function): void {
+        READY_INSTANCES.forEach((instance) => { fn.apply(instance.root, instance); })
+        READY_HANDLERS.push(fn);
     }
 
     // toggle values passed by param
@@ -148,7 +198,7 @@ export namespace c2js {
         return toggle[value === toggle[0] ? 1 : 0];
     }
 
-    function isSet(obj: any): boolean {
+    function isNull(obj: any): boolean {
         return obj !== void 0 && obj !== null;
     }
 
@@ -210,17 +260,19 @@ export namespace c2js {
     } 
 
     export class Init {
+        public id: string;
         private status: string;
-        private shortcuts: HTMLElement[];
-        private $c2js: c2.Query;
-        private c2js: HTMLElement;
+        private shortcuts: C2Element[];
+        private $root: c2.Query;
+        private root: C2Element;
         private $media: c2.Query;
         private media: HTMLMediaElement;
         private config: Config;
         private cache: any = {};
 
-        public constructor(el, config?: Config, onReady?: Function) {
+        public constructor(el, config: Config = {}, onReady?: Function) {
             let _this = this;
+            console.log(arguments);
 
             c2.fn.data = function (ctrlType: string, value?) {        
                 if (value === void 0) {
@@ -236,13 +288,14 @@ export namespace c2js {
                 return c2(this).attr('c2-' + ctrlType, value);
             }
 
-            el.c2js = true;
+            el.c2 = { instance: this };
             this.status = '';
             this.shortcuts = [];
-            this.c2js = <HTMLElement> c2(el).first(),
-            this.$c2js = c2(this.c2js),
-            this.$media = this.$c2js.findOne('video, audio'),
-            this.media = <HTMLMediaElement> this.$media.first();
+            this.root = <C2Element> c2(el).get(0),
+            this.$root = c2(this.root),
+            this.$media = this.$root.findOne('video, audio'),
+            this.media = <HTMLMediaElement> this.$media.get(0);
+            this.id = this.$root.attr(APP_NAME);
 
             this.$media.on('timeupdate', () => {
                 if ((this.cache.currentTime|0) !== (this.media.currentTime|0)) {
@@ -251,37 +304,44 @@ export namespace c2js {
                 }
             });
 
-            this.config = config || {};
+            this.config = config;
             c2.each(DEFAULT_CONFIG, (key, value) => {
                 if (this.config[key] === void 0) {
                     this.config[key] = value;
                 }
             });
 
-            this.$c2js  .attrIfNotExists('tabindex', -1);
+            this.$root  .attrIfNotExists('tabindex', -1);
             this.$media .attrIfNotExists('src', '')
                         .attrIfNotExists('tabindex', -1);
 
             this.initControls();
             this.loadSavedInfo();
             this.bindSaveEvents();
+            this.executeOnReadyHandlers(onReady);
 
-            onReady && onReady(this.$c2js.attr('c2js'), this);
+            
         }
 
-        private readyStateAtLeast(id) {
+        private executeOnReadyHandlers(onReady) {
+            READY_HANDLERS.forEach((handler) => { handler.call(this.root, this); });
+            onReady && onReady(this);
+            READY_INSTANCES.push(this);
+        }
+
+        private mediaReadyState(id) {
             return this.media.readyState >= id;
         }
 
         private searchCtrl(ctrlType: string): c2.Query {
-            return this.$c2js.find(`[c2-${ctrlType}]`);
+            return this.$root.find(`[c2-${ctrlType}]`);
         }
 
         private createHandler(handler: Function, prop: ControlProperty): Handler {
             let h = prop.helpers;
 
-            h.c2js = this.c2js;
-            h.$c2js = this.$c2js;
+            h.root = this.root;
+            h.$root = this.$root;
             h.media = this.media;
             h.$media = this.$media;
             h.context = this;
@@ -297,7 +357,7 @@ export namespace c2js {
         }
 
         private setStatus(): void {
-            this.$c2js.data('status', this.status);
+            this.$root.data('status', this.status);
             this.getAll('status').data('status', this.status);
         }
 
@@ -359,7 +419,7 @@ export namespace c2js {
 
         private bindMedia(property: ControlProperty): void {
             // TESTING
-            let loadedData = this.readyStateAtLeast(MEDIASTATE.HAVE_CURRENT_DATA);
+            let loadedData = this.mediaReadyState(MEDIASTATE.HAVE_CURRENT_DATA);
 
             c2.each(property.media, (event, handler) => {
                 handler = this.createHandler(handler, property);
@@ -385,7 +445,7 @@ export namespace c2js {
                 keys.toLowerCase().split(' ').forEach((key) => {
                     if (key === 'dblclick') {
                         let $el = c2(el);
-                        this.$c2js.on(key, (e) => {
+                        this.$root.on(key, (e) => {
                             if (!e.target.hasOnClick) {
                                 $el.trigger('click');
                             }
@@ -400,7 +460,7 @@ export namespace c2js {
         }
 
         private bindShortcuts(): void {
-            this.$c2js.on('keydown', (e) => {
+            this.$root.on('keydown', (e) => {
                 let el, key = e.key.toLowerCase();
                 if (el = this.shortcuts[key]) {
                     c2(el).trigger('click');
@@ -410,8 +470,8 @@ export namespace c2js {
         }
 
         private redirectControlFocus(): void {
-            this.$c2js.on('focus', (e) => {
-                this.c2js.focus();
+            this.$root.on('focus', (e) => {
+                this.root.focus();
                 e.stopPropagation();
             }, true);
         }
@@ -440,7 +500,7 @@ export namespace c2js {
                     }
                 },
                 media: {
-                    play: function (e) {
+                    playing: function (e) {
                         e.$all.data('play', true);
                     },
                     pause: function (e) {
@@ -472,7 +532,7 @@ export namespace c2js {
                 }
             },
 
-            move: {
+            skip: {
                 events: {
                     click: function (e) {
                         let max = e.media.duration,
@@ -524,11 +584,11 @@ export namespace c2js {
                     }
 
                     FS_VAR.onChange(() => {
-                        e.$all.data('fullscreen', e.c2js === FS_VAR.check());
+                        e.$all.data('fullscreen', e.root === FS_VAR.check());
                     });
 
                     FS_VAR.onError(() => {
-                        if (e.c2js === FS_VAR.check()) {
+                        if (e.root === FS_VAR.check()) {
                             alert('Fullscreen Error!');
                             console.error('Fullscreen Error!');
                         }
@@ -538,7 +598,7 @@ export namespace c2js {
                 events: {
                     click: function (e) {
                         if (FS_VAR.allowed) {
-                            FS_VAR.check() ? FS_VAR.leave() : FS_VAR.enter(e.c2js);
+                            FS_VAR.check() ? FS_VAR.leave() : FS_VAR.enter(e.root);
                         }
                     }
                 }
@@ -699,32 +759,29 @@ export namespace c2js {
                 }
             },
 
-            'hide-mouse': {
-                helpers: {
-                    isMoving: function (el) {
-                        let timer = c2(el).data('hide-mouse');
-                        el.c2.timer = timer ? breakNumber(timer, 'ms').number : 3000;
-                        c2(el).css('cursor', el.c2.cursor);
-                    },
-                    isStopped: function (el) {
-                        el.c2.timer = null;
-                        c2(el).css('cursor', 'none');
-                    }
-                },
+            timer: {
                 ready: function (e) {
+                    // Initialize c2.timer and c2.maxTimer
                     e.$all.each((_, el) => {
-                        (<any>el).c2 = { id: null, timer: null, cursor: c2(el).css('cursor') };
+                        if (!el.c2) { el.c2 = {}; }
+                        el.c2.timer = c2(this).config('timer') || e.context.config.timer;
                     });
                 },
+
                 events: {
-                    mousemove: function (e) {
+                    mousemove: function () {
                         let prop = this.c2;
-                        if (!prop) { return; }
-    
-                        if (!prop.timer) { e.isMoving(this); }
-    
-                        if (prop.id) { clearTimeout(prop.id); }
-                        prop.id = setTimeout(() => { e.isStopped(this); }, prop.timer);
+
+                        if (prop.timerId) {
+                            clearTimeout(prop.timerId);
+                        } else {
+                            c2(this).data('timer', 'true');
+                        }
+
+                        this.c2.timerId = setTimeout(() => {
+                            prop.timerId = void 0;
+                            c2(this).data('timer', 'false');
+                        }, prop.timer);
                     }
                 }
             },
@@ -744,18 +801,18 @@ export namespace c2js {
                 src = storage(STORAGE.SRC),
                 time = storage(STORAGE.TIME);
 
-            if (isSet(volume)) { this.media.volume = volume; }
+            if (isNull(volume)) { this.media.volume = volume; }
             this.media.muted = muted === true || muted === 'true';
 
             // If src not exists, dont change the time
-            if (!isSet(src)) { return; }
+            if (!isNull(src)) { return; }
 
             // If the src of the video exists and is different, dont change the time
             let actualSrc = this.$media.attr('src');
             if (actualSrc && actualSrc !== src) { return; }
 
             let updateTime = () => {
-                if (!isSet(time)) { return; }
+                if (!isNull(time)) { return; }
                 this.media.pause();
                 // FIXED: Issue "updatetime unchanged" on Edge and IE
                 this.media.currentTime = parseFloat(time);
@@ -763,7 +820,7 @@ export namespace c2js {
             };
 
             // FIXED: Same video loaded on start
-            if (this.readyStateAtLeast(MEDIASTATE.HAVE_METADATA)) {
+            if (this.mediaReadyState(MEDIASTATE.HAVE_METADATA)) {
                 updateTime();
                 return;    
             }
@@ -811,14 +868,14 @@ export namespace c2js {
         }
     }
 
-    export function c2(selector: string | HTMLElement | ArrayLike<HTMLElement> | DOC, context?): c2.Query { return new c2.Query(selector, context || DOC); }
+    export function c2(selector, context?): c2.Query { return new c2.Query(selector, context || DOC); }
 
     export namespace c2 {
         export class Query {
             [key: string]: any;
-            private list: ArrayLike<HTMLElement>;
+            private list: ArrayLike<C2Element>;
 
-            public constructor(selector, context: DOC | HTMLElement) {
+            public constructor(selector, context: DOC | C2Element) {
                 if (typeof selector === 'string') {
 
                     let type = selector.match(/^([#.]?)([-\w]+)(.*)$/);
@@ -847,7 +904,7 @@ export namespace c2js {
                 }
             }
 
-            public each(handler: (i: number, el: HTMLElement) => void): this {
+            public each(handler: (i: number, el: C2Element) => void): this {
                 each(this.list, handler);
                 return this;
             }
@@ -897,10 +954,34 @@ export namespace c2js {
                 return !this.list.length;
             }
 
+            public toggleClass(className: string) {
+                return this.requestClassList('toggle', className);
+            }
+
+            public addClass(className: string) {
+                return this.requestClassList('add', className);
+            }
+
+            public removeClass(className: string) {
+                return this.requestClassList('remove', className);
+            }
+
+            public requestClassList(fnName: string, className: string): Query {
+                try {
+                    return this.each((_, el) => {
+                        el.classList[fnName](className);
+                    });
+                } catch (e) {
+                    console.error("ClassList not supported!\nError:");
+                    console.error(e);
+                    return this;
+                }
+            }
+
             public attr(name: string, value?): any {
                 if (this.empty()) { return; }
                 if (!isSet(value)) {
-                    return this.first().getAttribute(name);
+                    return this.get(0).getAttribute(name);
                 }
                 return this.each((_, el) => {
                     el.setAttribute(name, value + '');
@@ -909,29 +990,35 @@ export namespace c2js {
 
             public attrIfNotExists(attr: string, value): Query {
                 return this.each((_, el) => {
-                    let val = el.getAttribute(attr);
-                    if (val === null || val === void 0) {
+                    if (!isNull(el.getAttribute(attr))) {
                         el.setAttribute(attr, value);
                     }
                 });
             }
 
-            public val(value?): any {
+            public prop(prop: string, value?): any {
                 if (!isSet(value)) {
-                    return (<any>this.first()).value;
+                    return this.get(0)[prop];
                 }
-                (<any>this.first()).value = value;
+
+                return this.each((_, el) => {
+                    el[prop] = value;
+                });
+            }
+
+            public val(value?): any {
+                return this.prop('value', value);
             }
 
             public text(text?): any {
                 if (isSet(text)) {
-                    return this.each((_, elem) => {
-                        elem.textContent = text;
+                    return this.each((_, el) => {
+                        el.textContent = text;
                     });
                 }
                 let value = '';
-                this.each((_, elem) => {
-                    value += elem.textContent;
+                this.each((_, el) => {
+                    value += el.textContent;
                 });
                 return value.trim() || void 0;
             }
@@ -949,7 +1036,7 @@ export namespace c2js {
     
                 if (this.empty()) { return void 0; }
     
-                let el: any = this.first(),
+                let el: any = this.get(0),
                     view = el.ownerDocument.defaultView;
     
                 if (view && view.getComputedStyle) { return view.getComputedStyle(el, void 0).getPropertyValue(styleName); }
@@ -958,21 +1045,38 @@ export namespace c2js {
             }
 
             public find(selector: string): Query {
-                return c2(selector, this.first());
+                return c2(selector, this.get(0));
             }
 
             public findOne(selector: string): Query {
-                return c2(this.first().querySelector(selector));
+                return c2(this.get(0).querySelector(selector));
             }
 
-            public filter(filter: (i: number, el: HTMLElement) => boolean): Query {
+            public filter(filter: (i: number, el: C2Element) => boolean): Query {
                 let list = [];
                 this.each((i, el) => { filter.call(el, i, el) && list.push(el); });
                 return c2(list);
             }
 
-            public first(): HTMLElement | DOC | WIN {
-                return this.list[0];
+            public first(): Query {
+                let newList = this.list.length > 1 ? [this.list[0]] : this.list;
+                return c2(newList);
+            }
+
+            public get(index: number): C2Element {
+                return this.list[index];
+            }
+
+            public control(type): any {
+                return this.find(`[c2-${type}]`);
+            }
+
+            public custom(id): any {
+                return this.find(`[c2-custom=${id}]`);
+            }
+
+            public config(config): any {
+                return this.first().attr(`c2-config:${config}`);
             }
         }
 

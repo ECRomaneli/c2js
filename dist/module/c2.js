@@ -1,7 +1,37 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-function c2js(el, config, onReady) {
-    c2js.ready(() => { new c2js.Init(el, config, onReady); });
+/**
+ * Mix self-constructor
+ */
+function c2js(e, c, o) {
+    let isConfig = (obj) => obj.__proto__ === Object.prototype, isFunction = (fn) => typeof fn === 'function', startAll = (c, o) => {
+        c2js.c2(`[${c2js.APP_NAME}]`).each((_, el) => {
+            !el.c2 && new c2js.Init(el, c, o);
+        });
+    };
+    if (arguments.length === 3
+        || arguments.length === 2 && isConfig(c)
+        || arguments.length === 1 && !(isConfig(e) || isFunction(e))) {
+        c2js.DOMReady(() => { new c2js.Init(e, c, o); });
+        return;
+    }
+    if (arguments.length === 2) {
+        if (isConfig(e)) {
+            c2js.DOMReady(() => { startAll(e, c); });
+            return;
+        }
+        c2js.DOMReady(() => { new c2js.Init(e, void 0, c); });
+        return;
+    }
+    if (arguments.length === 1) {
+        if (isConfig(e)) {
+            c2js.DOMReady(() => { startAll(e); });
+            return;
+        }
+        c2js.DOMReady(() => { startAll(void 0, e); });
+        return;
+    }
+    c2js.DOMReady(() => { startAll(); });
 }
 exports.c2js = c2js;
 (function (c2js_1) {
@@ -23,6 +53,8 @@ exports.c2js = c2js;
         MEDIASTATE[MEDIASTATE["HAVE_FUTURE_DATA"] = 3] = "HAVE_FUTURE_DATA";
         MEDIASTATE[MEDIASTATE["HAVE_ENOUGH_DATA"] = 4] = "HAVE_ENOUGH_DATA"; // Enough data is available for downloading media to the end without interruption.
     })(MEDIASTATE || (MEDIASTATE = {}));
+    const READY_INSTANCES = [];
+    const READY_HANDLERS = [];
     const SEEK_DATA = { seeking: false, last: void 0 };
     const KEYMAP = {
         space: [' ', 'spacebar'],
@@ -35,7 +67,13 @@ exports.c2js = c2js;
         right: ['right', 'arrowright'],
         down: ['down', 'arrowdown']
     };
-    const DEFAULT_CONFIG = { saveTime: false, speed: { min: 0, max: 3 } };
+    const DEFAULT_CONFIG = {
+        saveTime: false,
+        speed: { min: 0, max: 3 },
+        timer: 1000,
+        timeFormat: 'mm:ss'
+    };
+    // FIXED: On trying to access localStorage with file protocol at the Edge, thrown Exception.
     try {
         DEFAULT_CONFIG.saveWith = localStorage ? 'localStorage' : 'cookie';
     }
@@ -45,6 +83,7 @@ exports.c2js = c2js;
     var FS_VAR;
     // Verify if browser allow fullscreen and set the navPrefix and
     // fullscreen functions
+    // FIX: This script dont grant if fullscreen is not supported.
     function allowFullscreen() {
         if (FS_VAR) {
             return FS_VAR.allowed;
@@ -99,7 +138,7 @@ exports.c2js = c2js;
         };
         return true;
     }
-    function ready(fn) {
+    function DOMReady(fn) {
         if (DOC.readyState !== 'loading') {
             fn();
         }
@@ -107,21 +146,18 @@ exports.c2js = c2js;
             DOC.addEventListener('DOMContentLoaded', () => { fn(); });
         }
     }
-    c2js_1.ready = ready;
-    function startAll(config, onReady) {
-        ready(() => {
-            c2(`[${c2js_1.APP_NAME}]`).each((_, el) => {
-                !el.c2js && new c2js.Init(el, config, onReady);
-            });
-        });
+    c2js_1.DOMReady = DOMReady;
+    function ready(fn) {
+        READY_INSTANCES.forEach((instance) => { fn.apply(instance.root, instance); });
+        READY_HANDLERS.push(fn);
     }
-    c2js_1.startAll = startAll;
+    c2js_1.ready = ready;
     // toggle values passed by param
     function toggleVal(value, toggle) {
         return toggle[value === toggle[0] ? 1 : 0];
     }
     c2js_1.toggleVal = toggleVal;
-    function isSet(obj) {
+    function isNull(obj) {
         return obj !== void 0 && obj !== null;
     }
     // Get value, min or max if overflow
@@ -175,7 +211,7 @@ exports.c2js = c2js;
         return str.indexOf(substr) !== -1;
     }
     class Init {
-        constructor(el, config, onReady) {
+        constructor(el, config = {}, onReady) {
             this.cache = {};
             this.ctrls = {
                 loading: {
@@ -201,7 +237,7 @@ exports.c2js = c2js;
                         }
                     },
                     media: {
-                        play: function (e) {
+                        playing: function (e) {
                             e.$all.data('play', true);
                         },
                         pause: function (e) {
@@ -233,7 +269,7 @@ exports.c2js = c2js;
                         }
                     }
                 },
-                move: {
+                skip: {
                     events: {
                         click: function (e) {
                             let max = e.media.duration, broken = breakNumber(c2(this).data('move'), 's', max), time = broken.number;
@@ -276,10 +312,10 @@ exports.c2js = c2js;
                             return;
                         }
                         FS_VAR.onChange(() => {
-                            e.$all.data('fullscreen', e.c2js === FS_VAR.check());
+                            e.$all.data('fullscreen', e.root === FS_VAR.check());
                         });
                         FS_VAR.onError(() => {
-                            if (e.c2js === FS_VAR.check()) {
+                            if (e.root === FS_VAR.check()) {
                                 alert('Fullscreen Error!');
                                 console.error('Fullscreen Error!');
                             }
@@ -288,7 +324,7 @@ exports.c2js = c2js;
                     events: {
                         click: function (e) {
                             if (FS_VAR.allowed) {
-                                FS_VAR.check() ? FS_VAR.leave() : FS_VAR.enter(e.c2js);
+                                FS_VAR.check() ? FS_VAR.leave() : FS_VAR.enter(e.root);
                             }
                         }
                     }
@@ -434,36 +470,29 @@ exports.c2js = c2js;
                         }
                     }
                 },
-                'hide-mouse': {
-                    helpers: {
-                        isMoving: function (el) {
-                            let timer = c2(el).data('hide-mouse');
-                            el.c2.timer = timer ? breakNumber(timer, 'ms').number : 3000;
-                            c2(el).css('cursor', el.c2.cursor);
-                        },
-                        isStopped: function (el) {
-                            el.c2.timer = null;
-                            c2(el).css('cursor', 'none');
-                        }
-                    },
+                timer: {
                     ready: function (e) {
+                        // Initialize c2.timer and c2.maxTimer
                         e.$all.each((_, el) => {
-                            el.c2 = { id: null, timer: null, cursor: c2(el).css('cursor') };
+                            if (!el.c2) {
+                                el.c2 = {};
+                            }
+                            el.c2.timer = c2(this).config('timer') || e.context.config.timer;
                         });
                     },
                     events: {
-                        mousemove: function (e) {
+                        mousemove: function () {
                             let prop = this.c2;
-                            if (!prop) {
-                                return;
+                            if (prop.timerId) {
+                                clearTimeout(prop.timerId);
                             }
-                            if (!prop.timer) {
-                                e.isMoving(this);
+                            else {
+                                c2(this).data('timer', 'true');
                             }
-                            if (prop.id) {
-                                clearTimeout(prop.id);
-                            }
-                            prop.id = setTimeout(() => { e.isStopped(this); }, prop.timer);
+                            this.c2.timerId = setTimeout(() => {
+                                prop.timerId = void 0;
+                                c2(this).data('timer', 'false');
+                            }, prop.timer);
                         }
                     }
                 },
@@ -471,6 +500,7 @@ exports.c2js = c2js;
                 custom: {}
             };
             let _this = this;
+            console.log(arguments);
             c2.fn.data = function (ctrlType, value) {
                 if (value === void 0) {
                     return c2(this).attr('c2-' + ctrlType);
@@ -483,43 +513,49 @@ exports.c2js = c2js;
                 }
                 return c2(this).attr('c2-' + ctrlType, value);
             };
-            el.c2js = true;
+            el.c2 = { instance: this };
             this.status = '';
             this.shortcuts = [];
-            this.c2js = c2(el).first(),
-                this.$c2js = c2(this.c2js),
-                this.$media = this.$c2js.findOne('video, audio'),
-                this.media = this.$media.first();
+            this.root = c2(el).get(0),
+                this.$root = c2(this.root),
+                this.$media = this.$root.findOne('video, audio'),
+                this.media = this.$media.get(0);
+            this.id = this.$root.attr(c2js_1.APP_NAME);
             this.$media.on('timeupdate', () => {
                 if ((this.cache.currentTime | 0) !== (this.media.currentTime | 0)) {
                     this.cache.currentTime = this.media.currentTime;
                     this.$media.trigger('stimeupdate');
                 }
             });
-            this.config = config || {};
+            this.config = config;
             c2.each(DEFAULT_CONFIG, (key, value) => {
                 if (this.config[key] === void 0) {
                     this.config[key] = value;
                 }
             });
-            this.$c2js.attrIfNotExists('tabindex', -1);
+            this.$root.attrIfNotExists('tabindex', -1);
             this.$media.attrIfNotExists('src', '')
                 .attrIfNotExists('tabindex', -1);
             this.initControls();
             this.loadSavedInfo();
             this.bindSaveEvents();
-            onReady && onReady(this.$c2js.attr('c2js'), this);
+            this.executeOnReadyHandlers(onReady);
         }
-        readyStateAtLeast(id) {
+        executeOnReadyHandlers(onReady) {
+            READY_HANDLERS.forEach((handler) => { handler.call(this.root, this); });
+            onReady && onReady(this);
+            READY_INSTANCES.push(this);
+        }
+        mediaReadyState(id) {
             return this.media.readyState >= id;
         }
         searchCtrl(ctrlType) {
-            return this.$c2js.find(`[c2-${ctrlType}]`);
+            return this.$root.find(`[c2-${ctrlType}]`);
         }
         createHandler(handler, prop) {
             let h = prop.helpers;
-            h.c2js = this.c2js;
-            h.$c2js = this.$c2js;
+            h.root = this.root;
+            h.$root = this.$root;
             h.media = this.media;
             h.$media = this.$media;
             h.context = this;
@@ -532,7 +568,7 @@ exports.c2js = c2js;
             return this.ctrls[ctrlType].helpers.$all;
         }
         setStatus() {
-            this.$c2js.data('status', this.status);
+            this.$root.data('status', this.status);
             this.getAll('status').data('status', this.status);
         }
         addStatus(status) {
@@ -584,7 +620,7 @@ exports.c2js = c2js;
         }
         bindMedia(property) {
             // TESTING
-            let loadedData = this.readyStateAtLeast(MEDIASTATE.HAVE_CURRENT_DATA);
+            let loadedData = this.mediaReadyState(MEDIASTATE.HAVE_CURRENT_DATA);
             c2.each(property.media, (event, handler) => {
                 handler = this.createHandler(handler, property);
                 // Fix crash when video loads before c2js
@@ -608,7 +644,7 @@ exports.c2js = c2js;
                 keys.toLowerCase().split(' ').forEach((key) => {
                     if (key === 'dblclick') {
                         let $el = c2(el);
-                        this.$c2js.on(key, (e) => {
+                        this.$root.on(key, (e) => {
                             if (!e.target.hasOnClick) {
                                 $el.trigger('click');
                             }
@@ -623,7 +659,7 @@ exports.c2js = c2js;
             });
         }
         bindShortcuts() {
-            this.$c2js.on('keydown', (e) => {
+            this.$root.on('keydown', (e) => {
                 let el, key = e.key.toLowerCase();
                 if (el = this.shortcuts[key]) {
                     c2(el).trigger('click');
@@ -632,8 +668,8 @@ exports.c2js = c2js;
             });
         }
         redirectControlFocus() {
-            this.$c2js.on('focus', (e) => {
-                this.c2js.focus();
+            this.$root.on('focus', (e) => {
+                this.root.focus();
                 e.stopPropagation();
             }, true);
         }
@@ -643,12 +679,12 @@ exports.c2js = c2js;
                 return;
             }
             let storage = this.cache.storage = cfg.saveWith === 'cookie' ? c2.cookie : c2.storage, volume = storage(STORAGE.VOLUME), muted = storage(STORAGE.MUTED), src = storage(STORAGE.SRC), time = storage(STORAGE.TIME);
-            if (isSet(volume)) {
+            if (isNull(volume)) {
                 this.media.volume = volume;
             }
             this.media.muted = muted === true || muted === 'true';
             // If src not exists, dont change the time
-            if (!isSet(src)) {
+            if (!isNull(src)) {
                 return;
             }
             // If the src of the video exists and is different, dont change the time
@@ -657,7 +693,7 @@ exports.c2js = c2js;
                 return;
             }
             let updateTime = () => {
-                if (!isSet(time)) {
+                if (!isNull(time)) {
                     return;
                 }
                 this.media.pause();
@@ -666,7 +702,7 @@ exports.c2js = c2js;
                 this.media.currentTime += 0.001;
             };
             // FIXED: Same video loaded on start
-            if (this.readyStateAtLeast(MEDIASTATE.HAVE_METADATA)) {
+            if (this.mediaReadyState(MEDIASTATE.HAVE_METADATA)) {
                 updateTime();
                 return;
             }
@@ -787,12 +823,33 @@ exports.c2js = c2js;
             empty() {
                 return !this.list.length;
             }
+            toggleClass(className) {
+                return this.requestClassList('toggle', className);
+            }
+            addClass(className) {
+                return this.requestClassList('add', className);
+            }
+            removeClass(className) {
+                return this.requestClassList('remove', className);
+            }
+            requestClassList(fnName, className) {
+                try {
+                    return this.each((_, el) => {
+                        el.classList[fnName](className);
+                    });
+                }
+                catch (e) {
+                    console.error("ClassList not supported!\nError:");
+                    console.error(e);
+                    return this;
+                }
+            }
             attr(name, value) {
                 if (this.empty()) {
                     return;
                 }
                 if (!isSet(value)) {
-                    return this.first().getAttribute(name);
+                    return this.get(0).getAttribute(name);
                 }
                 return this.each((_, el) => {
                     el.setAttribute(name, value + '');
@@ -800,27 +857,31 @@ exports.c2js = c2js;
             }
             attrIfNotExists(attr, value) {
                 return this.each((_, el) => {
-                    let val = el.getAttribute(attr);
-                    if (val === null || val === void 0) {
+                    if (!isNull(el.getAttribute(attr))) {
                         el.setAttribute(attr, value);
                     }
                 });
             }
-            val(value) {
+            prop(prop, value) {
                 if (!isSet(value)) {
-                    return this.first().value;
+                    return this.get(0)[prop];
                 }
-                this.first().value = value;
+                return this.each((_, el) => {
+                    el[prop] = value;
+                });
+            }
+            val(value) {
+                return this.prop('value', value);
             }
             text(text) {
                 if (isSet(text)) {
-                    return this.each((_, elem) => {
-                        elem.textContent = text;
+                    return this.each((_, el) => {
+                        el.textContent = text;
                     });
                 }
                 let value = '';
-                this.each((_, elem) => {
-                    value += elem.textContent;
+                this.each((_, el) => {
+                    value += el.textContent;
                 });
                 return value.trim() || void 0;
             }
@@ -838,7 +899,7 @@ exports.c2js = c2js;
                 if (this.empty()) {
                     return void 0;
                 }
-                let el = this.first(), view = el.ownerDocument.defaultView;
+                let el = this.get(0), view = el.ownerDocument.defaultView;
                 if (view && view.getComputedStyle) {
                     return view.getComputedStyle(el, void 0).getPropertyValue(styleName);
                 }
@@ -848,10 +909,10 @@ exports.c2js = c2js;
                 return el.style[styleName];
             }
             find(selector) {
-                return c2(selector, this.first());
+                return c2(selector, this.get(0));
             }
             findOne(selector) {
-                return c2(this.first().querySelector(selector));
+                return c2(this.get(0).querySelector(selector));
             }
             filter(filter) {
                 let list = [];
@@ -859,7 +920,20 @@ exports.c2js = c2js;
                 return c2(list);
             }
             first() {
-                return this.list[0];
+                let newList = this.list.length > 1 ? [this.list[0]] : this.list;
+                return c2(newList);
+            }
+            get(index) {
+                return this.list[index];
+            }
+            control(type) {
+                return this.find(`[c2-${type}]`);
+            }
+            custom(id) {
+                return this.find(`[c2-custom=${id}]`);
+            }
+            config(config) {
+                return this.first().attr(`c2-config:${config}`);
             }
         }
         c2.Query = Query;

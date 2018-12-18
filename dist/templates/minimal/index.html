@@ -1,6 +1,14 @@
 <link rel="stylesheet" href="../../web/c2.css" type="text/css" />
 <script type="text/javascript" src="../../web/c2.js"></script>
-<script>c2js('[c2js]', { saveTime: true })</script>
+<script>
+    c2js('[c2js]', { 
+        saveTime: true,
+        timer: 1000,
+        timeout: 1000,
+        format: 'mm:ss',
+
+    })
+</script>
 
 <style>
     [c2js] {
@@ -14,7 +22,7 @@
 
 
 <div c2js='player'>
-    <video c2-hide-mouse='1000' src="../assets/sample.mp4"></video>
+    <video c2-timer c2-config:timer='5000' src="../assets/sample.mp4"></video>
     <div class="mm-container actived">
         <div class="mm-top mm-row">
             <button c2-custom='back' c2-shortcuts='esc'></button>
@@ -22,9 +30,9 @@
             <button c2-custom='menu' c2-shortcuts='tab'></button>
         </div>
         <div class="mm-middle mm-row">
-            <button c2-move="-5" c2-shortcuts='left'></button>
+            <button c2-skip="-5" c2-shortcuts='left'></button>
             <button c2-play c2-loading c2-shortcuts='space'></button>
-            <button c2-move="+5" c2-shortcuts='right'></button>
+            <button c2-skip="+5" c2-shortcuts='right'></button>
         </div>
         <div class="mm-bottom mm-row">
             <button c2-mute c2-shortcuts='m'></button>
@@ -32,7 +40,7 @@
             <button c2-fullscreen c2-shortcuts='f enter'></button>
         </div>
         <div class="mm-footer mm-row">
-            <span c2-time='current' c2-status>00:00</span>
+            <span c2-time='current' c2-config:timeFormat='HH:mm' c2-status>00:00</span>
             <input c2-time-seek type="range">
             <span c2-duration c2-status>00:00</span>
         </div>
