@@ -31,8 +31,8 @@ function c2js(e, c, o) {
     }
     c2js.DOMReady(function () { startAll(); });
 }
-(function (c2js_1) {
-    c2js_1.APP_NAME = 'c2js';
+(function (c2js) {
+    c2js.APP_NAME = 'c2js';
     var DOC = document;
     var WIN = window;
     var STORAGE;
@@ -143,26 +143,23 @@ function c2js(e, c, o) {
             DOC.addEventListener('DOMContentLoaded', function () { fn(); });
         }
     }
-    c2js_1.DOMReady = DOMReady;
+    c2js.DOMReady = DOMReady;
     function ready(fn) {
         READY_INSTANCES.forEach(function (instance) { fn.apply(instance.root, instance); });
         READY_HANDLERS.push(fn);
     }
-    c2js_1.ready = ready;
+    c2js.ready = ready;
     // toggle values passed by param
     function toggleVal(value, toggle) {
         return toggle[value === toggle[0] ? 1 : 0];
     }
-    c2js_1.toggleVal = toggleVal;
+    c2js.toggleVal = toggleVal;
     function isNull(obj) {
         return obj !== void 0 && obj !== null;
     }
     // Get value, min or max if overflow
     function minMaxVal(value, min, max) {
         return value < min ? min : value > max ? max : value;
-    }
-    function filterNull($ctrls) {
-        return $ctrls.filter(function (_, el) { return !el.hasAttribute('c2-null'); });
     }
     // Break down string number to 'signal', 'number' and 'unit'.
     function breakNumber(number, typeTo, total) {
@@ -271,7 +268,7 @@ function c2js(e, c, o) {
                 skip: {
                     events: {
                         click: function (e) {
-                            var max = e.media.duration, broken = breakNumber(c2(this).data('move'), 's', max), time = broken.number;
+                            var max = e.media.duration, broken = breakNumber(c2(this).data('skip'), 's', max), time = broken.number;
                             if (broken.signal) {
                                 time += e.media.currentTime;
                                 time = minMaxVal(time, 0, max);
@@ -474,9 +471,6 @@ function c2js(e, c, o) {
                         var _this_1 = this;
                         // Initialize c2.timer and c2.maxTimer
                         e.$all.each(function (_, el) {
-                            if (!el.c2) {
-                                el.c2 = {};
-                            }
                             el.c2.timer = c2(_this_1).config('timer') || e.context.config.timer;
                         });
                     },
@@ -501,7 +495,6 @@ function c2js(e, c, o) {
                 custom: {}
             };
             var _this = this;
-            console.log(arguments);
             c2.fn.data = function (ctrlType, value) {
                 if (value === void 0) {
                     return c2(this).attr('c2-' + ctrlType);
@@ -521,7 +514,7 @@ function c2js(e, c, o) {
                 this.$root = c2(this.root),
                 this.$media = this.$root.findOne('video, audio'),
                 this.media = this.$media.get(0);
-            this.id = this.$root.attr(c2js_1.APP_NAME);
+            this.id = this.$root.attr(c2js.APP_NAME);
             this.$media.on('timeupdate', function () {
                 if ((_this_1.cache.currentTime | 0) !== (_this_1.media.currentTime | 0)) {
                     _this_1.cache.currentTime = _this_1.media.currentTime;
@@ -550,9 +543,6 @@ function c2js(e, c, o) {
         };
         Init.prototype.mediaReadyState = function (id) {
             return this.media.readyState >= id;
-        };
-        Init.prototype.searchCtrl = function (ctrlType) {
-            return this.$root.find("[c2-" + ctrlType + "]");
         };
         Init.prototype.createHandler = function (handler, prop) {
             var h = prop.helpers;
@@ -592,7 +582,7 @@ function c2js(e, c, o) {
         Init.prototype.initControls = function () {
             var _this_1 = this;
             c2.each(this.ctrls, function (name, property) {
-                var $ctrl = _this_1.searchCtrl(name);
+                var $ctrl = _this_1.$root.control(name).initProp('c2');
                 if ($ctrl) {
                     // Register global variables into props
                     if (!property.helpers) {
@@ -605,7 +595,7 @@ function c2js(e, c, o) {
                     _this_1.addShortcuts($ctrl);
                 }
             });
-            // Redirect focus of control to c2js (Fix 'space' problem)
+            // Redirect focus of control to root (Fix 'space' problem)
             this.redirectControlFocus();
             // When you finish recording all the controls, then register your shortcuts
             this.bindShortcuts();
@@ -617,18 +607,17 @@ function c2js(e, c, o) {
         };
         Init.prototype.bindEvents = function (property) {
             var _this_1 = this;
-            var $callers = filterNull(property.helpers.$all);
+            var $callers = property.helpers.$all.notNull();
             c2.each(property.events, function (event, handler) {
                 $callers.on(event, _this_1.createHandler(handler, property));
             });
         };
         Init.prototype.bindMedia = function (property) {
             var _this_1 = this;
-            // TESTING
             var loadedData = this.mediaReadyState(MEDIASTATE.HAVE_CURRENT_DATA);
             c2.each(property.media, function (event, handler) {
                 handler = _this_1.createHandler(handler, property);
-                // Fix crash when video loads before c2js
+                // FIXED: crash when video loads first
                 if (isSubstr(event, 'loadeddata') && loadedData) {
                     if (loadedData) {
                         handler();
@@ -643,16 +632,15 @@ function c2js(e, c, o) {
         Init.prototype.addShortcuts = function ($ctrls) {
             var _this_1 = this;
             $ctrls.each(function (_, el) {
-                var keys = c2(el).data('shortcuts');
+                var $el = c2(el), keys = $el.data('shortcuts');
                 if (!keys) {
                     return;
                 }
                 keys.toLowerCase().split(' ').forEach(function (key) {
                     if (key === 'dblclick') {
-                        var $el_1 = c2(el);
                         _this_1.$root.on(key, function (e) {
-                            if (!e.target.hasOnClick) {
-                                $el_1.trigger('click');
+                            if (c2(e.target).config('dblClick') !== 'false') {
+                                $el.trigger('click');
                             }
                         }, true);
                     }
@@ -757,9 +745,9 @@ function c2js(e, c, o) {
         };
         return Init;
     }());
-    c2js_1.Init = Init;
+    c2js.Init = Init;
     function c2(selector, context) { return new c2.Query(selector, context || DOC); }
-    c2js_1.c2 = c2;
+    c2js.c2 = c2;
     (function (c2) {
         var Query = /** @class */ (function () {
             function Query(selector, context) {
@@ -939,8 +927,14 @@ function c2js(e, c, o) {
             Query.prototype.get = function (index) {
                 return this.list[index];
             };
+            Query.prototype.initProp = function (prop) {
+                return this.each(function (_, el) { el[prop] = {}; });
+            };
             Query.prototype.control = function (type) {
                 return this.find("[c2-" + type + "]");
+            };
+            Query.prototype.notNull = function () {
+                return this.filter(function (_, el) { return !el.hasAttribute('c2-null'); });
             };
             Query.prototype.custom = function (id) {
                 return this.find("[c2-custom=" + id + "]");
@@ -1022,5 +1016,5 @@ function c2js(e, c, o) {
         }
         c2.cookie = cookie;
         c2.fn = Query.prototype;
-    })(c2 = c2js_1.c2 || (c2js_1.c2 = {}));
+    })(c2 = c2js.c2 || (c2js.c2 = {}));
 })(c2js || (c2js = {}));

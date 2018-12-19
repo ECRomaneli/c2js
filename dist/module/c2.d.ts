@@ -19,10 +19,10 @@ export declare namespace c2js {
         media: HTMLMediaElement;
         $media: c2.Query;
         $all: c2.Query;
-        context: c2js.Init;
+        context: Init;
         [key: string]: any;
     };
-    type OnReady = (c2js: c2js.Init) => void;
+    type OnReady = (instance: Init) => void;
     type ArrayLikeObject = {
         [key: string]: any;
         length?: number;
@@ -53,7 +53,6 @@ export declare namespace c2js {
         constructor(el: any, config?: Config, onReady?: Function);
         private executeOnReadyHandlers;
         private mediaReadyState;
-        private searchCtrl;
         private createHandler;
         private getAll;
         private setStatus;
@@ -100,9 +99,11 @@ export declare namespace c2js {
             filter(filter: (i: number, el: C2Element) => boolean): Query;
             first(): Query;
             get(index: number): C2Element;
-            control(type: any): any;
-            custom(id: any): any;
-            config(config: any): any;
+            initProp(prop: string): Query;
+            control(type: string): Query;
+            notNull(): Query;
+            custom(id: string): Query;
+            config(config: string): any;
         }
         function each(arrLike: ArrayLikeObject, iterator: any): any;
         function storage(key: string, value?: any): any;

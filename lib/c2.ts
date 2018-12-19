@@ -58,10 +58,10 @@ export namespace c2js {
         media: HTMLMediaElement,
         $media: c2.Query,
         $all: c2.Query,
-        context: c2js.Init,
+        context: Init,
         [key: string]: any
     }
-    export type OnReady = (c2js: c2js.Init) => void;
+    export type OnReady = (instance: Init) => void;
     type ArrayLikeObject = { [key: string]: any, length?: number };
     type Handler = (event?: C2Event) => void;
     type ControlProperty = {
@@ -207,10 +207,6 @@ export namespace c2js {
         return  value < min ? min : value > max ? max : value;
     }
 
-    function filterNull($ctrls: c2.Query): c2.Query {
-        return $ctrls.filter((_, el) => !el.hasAttribute('c2-null'));
-    }
-
     // Break down string number to 'signal', 'number' and 'unit'.
     function breakNumber(number: string, typeTo: string, total?: number): BrokenNumber {
         if (!number) { return { number: 0 }; }
@@ -272,7 +268,6 @@ export namespace c2js {
 
         public constructor(el, config: Config = {}, onReady?: Function) {
             let _this = this;
-            console.log(arguments);
 
             c2.fn.data = function (ctrlType: string, value?) {        
                 if (value === void 0) {
@@ -286,7 +281,7 @@ export namespace c2js {
                 }
 
                 return c2(this).attr('c2-' + ctrlType, value);
-            }
+            } 
 
             el.c2 = { instance: this };
             this.status = '';
@@ -333,10 +328,6 @@ export namespace c2js {
             return this.media.readyState >= id;
         }
 
-        private searchCtrl(ctrlType: string): c2.Query {
-            return this.$root.find(`[c2-${ctrlType}]`);
-        }
-
         private createHandler(handler: Function, prop: ControlProperty): Handler {
             let h = prop.helpers;
 
@@ -380,7 +371,7 @@ export namespace c2js {
 
         private initControls(): void {
             c2.each(this.ctrls, (name, property) => {
-                let $ctrl = this.searchCtrl(name);
+                let $ctrl = this.$root.control(name).initProp('c2');
 
                 if ($ctrl) {
                     // Register global variables into props
@@ -397,7 +388,7 @@ export namespace c2js {
                 }
             });
 
-            // Redirect focus of control to c2js (Fix 'space' problem)
+            // Redirect focus of control to root (Fix 'space' problem)
             this.redirectControlFocus();
     
             // When you finish recording all the controls, then register your shortcuts
@@ -411,20 +402,19 @@ export namespace c2js {
         }
 
         private bindEvents(property: ControlProperty): void {
-            let $callers = filterNull(property.helpers.$all);
+            let $callers = property.helpers.$all.notNull();
             c2.each(property.events, (event, handler) => {
                 $callers.on(event, this.createHandler(handler, property));
             });
         }
 
         private bindMedia(property: ControlProperty): void {
-            // TESTING
             let loadedData = this.mediaReadyState(MEDIASTATE.HAVE_CURRENT_DATA);
 
             c2.each(property.media, (event, handler) => {
                 handler = this.createHandler(handler, property);
 
-                // Fix crash when video loads before c2js
+                // FIXED: crash when video loads first
                 if (isSubstr(event, 'loadeddata') && loadedData) {
                     if (loadedData) { handler(); }
                 }
@@ -439,14 +429,15 @@ export namespace c2js {
 
         private addShortcuts($ctrls: c2.Query): void {
             $ctrls.each((_, el) => {
-                let keys = c2(el).data('shortcuts');
-                if (!keys) { return; }
+                let $el = c2(el),
+                    keys = $el.data('shortcuts');
+                    if (!keys) { return; }
 
                 keys.toLowerCase().split(' ').forEach((key) => {
                     if (key === 'dblclick') {
-                        let $el = c2(el);
                         this.$root.on(key, (e) => {
-                            if (!e.target.hasOnClick) {
+                            // Thinking more
+                            if (c2(e.target).config('dblClick') !== 'false') {
                                 $el.trigger('click');
                             }
                         }, true);
@@ -531,12 +522,11 @@ export namespace c2js {
                     }
                 }
             },
-
             skip: {
                 events: {
                     click: function (e) {
                         let max = e.media.duration,
-                            broken = breakNumber(c2(this).data('move'), 's', max),
+                            broken = breakNumber(c2(this).data('skip'), 's', max),
                             time = broken.number;
     
                         if (broken.signal) {
@@ -763,7 +753,6 @@ export namespace c2js {
                 ready: function (e) {
                     // Initialize c2.timer and c2.maxTimer
                     e.$all.each((_, el) => {
-                        if (!el.c2) { el.c2 = {}; }
                         el.c2.timer = c2(this).config('timer') || e.context.config.timer;
                     });
                 },
@@ -1067,15 +1056,23 @@ export namespace c2js {
                 return this.list[index];
             }
 
-            public control(type): any {
+            public initProp(prop: string): Query {
+                return this.each((_, el) => { el[prop] = {}; });
+            }
+
+            public control(type: string): Query {
                 return this.find(`[c2-${type}]`);
             }
 
-            public custom(id): any {
+            public notNull(): Query {
+                return this.filter((_, el) => !el.hasAttribute('c2-null'));
+            }
+
+            public custom(id: string): Query {
                 return this.find(`[c2-custom=${id}]`);
             }
 
-            public config(config): any {
+            public config(config: string): any {
                 return this.first().attr(`c2-config:${config}`);
             }
         }

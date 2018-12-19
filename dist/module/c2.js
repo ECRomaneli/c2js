@@ -34,8 +34,8 @@ function c2js(e, c, o) {
     c2js.DOMReady(() => { startAll(); });
 }
 exports.c2js = c2js;
-(function (c2js_1) {
-    c2js_1.APP_NAME = 'c2js';
+(function (c2js) {
+    c2js.APP_NAME = 'c2js';
     const DOC = document;
     const WIN = window;
     let STORAGE;
@@ -146,26 +146,23 @@ exports.c2js = c2js;
             DOC.addEventListener('DOMContentLoaded', () => { fn(); });
         }
     }
-    c2js_1.DOMReady = DOMReady;
+    c2js.DOMReady = DOMReady;
     function ready(fn) {
         READY_INSTANCES.forEach((instance) => { fn.apply(instance.root, instance); });
         READY_HANDLERS.push(fn);
     }
-    c2js_1.ready = ready;
+    c2js.ready = ready;
     // toggle values passed by param
     function toggleVal(value, toggle) {
         return toggle[value === toggle[0] ? 1 : 0];
     }
-    c2js_1.toggleVal = toggleVal;
+    c2js.toggleVal = toggleVal;
     function isNull(obj) {
         return obj !== void 0 && obj !== null;
     }
     // Get value, min or max if overflow
     function minMaxVal(value, min, max) {
         return value < min ? min : value > max ? max : value;
-    }
-    function filterNull($ctrls) {
-        return $ctrls.filter((_, el) => !el.hasAttribute('c2-null'));
     }
     // Break down string number to 'signal', 'number' and 'unit'.
     function breakNumber(number, typeTo, total) {
@@ -272,7 +269,7 @@ exports.c2js = c2js;
                 skip: {
                     events: {
                         click: function (e) {
-                            let max = e.media.duration, broken = breakNumber(c2(this).data('move'), 's', max), time = broken.number;
+                            let max = e.media.duration, broken = breakNumber(c2(this).data('skip'), 's', max), time = broken.number;
                             if (broken.signal) {
                                 time += e.media.currentTime;
                                 time = minMaxVal(time, 0, max);
@@ -474,9 +471,6 @@ exports.c2js = c2js;
                     ready: function (e) {
                         // Initialize c2.timer and c2.maxTimer
                         e.$all.each((_, el) => {
-                            if (!el.c2) {
-                                el.c2 = {};
-                            }
                             el.c2.timer = c2(this).config('timer') || e.context.config.timer;
                         });
                     },
@@ -500,7 +494,6 @@ exports.c2js = c2js;
                 custom: {}
             };
             let _this = this;
-            console.log(arguments);
             c2.fn.data = function (ctrlType, value) {
                 if (value === void 0) {
                     return c2(this).attr('c2-' + ctrlType);
@@ -520,7 +513,7 @@ exports.c2js = c2js;
                 this.$root = c2(this.root),
                 this.$media = this.$root.findOne('video, audio'),
                 this.media = this.$media.get(0);
-            this.id = this.$root.attr(c2js_1.APP_NAME);
+            this.id = this.$root.attr(c2js.APP_NAME);
             this.$media.on('timeupdate', () => {
                 if ((this.cache.currentTime | 0) !== (this.media.currentTime | 0)) {
                     this.cache.currentTime = this.media.currentTime;
@@ -548,9 +541,6 @@ exports.c2js = c2js;
         }
         mediaReadyState(id) {
             return this.media.readyState >= id;
-        }
-        searchCtrl(ctrlType) {
-            return this.$root.find(`[c2-${ctrlType}]`);
         }
         createHandler(handler, prop) {
             let h = prop.helpers;
@@ -589,7 +579,7 @@ exports.c2js = c2js;
         }
         initControls() {
             c2.each(this.ctrls, (name, property) => {
-                let $ctrl = this.searchCtrl(name);
+                let $ctrl = this.$root.control(name).initProp('c2');
                 if ($ctrl) {
                     // Register global variables into props
                     if (!property.helpers) {
@@ -602,7 +592,7 @@ exports.c2js = c2js;
                     this.addShortcuts($ctrl);
                 }
             });
-            // Redirect focus of control to c2js (Fix 'space' problem)
+            // Redirect focus of control to root (Fix 'space' problem)
             this.redirectControlFocus();
             // When you finish recording all the controls, then register your shortcuts
             this.bindShortcuts();
@@ -613,17 +603,16 @@ exports.c2js = c2js;
             property.events && this.bindEvents(property);
         }
         bindEvents(property) {
-            let $callers = filterNull(property.helpers.$all);
+            let $callers = property.helpers.$all.notNull();
             c2.each(property.events, (event, handler) => {
                 $callers.on(event, this.createHandler(handler, property));
             });
         }
         bindMedia(property) {
-            // TESTING
             let loadedData = this.mediaReadyState(MEDIASTATE.HAVE_CURRENT_DATA);
             c2.each(property.media, (event, handler) => {
                 handler = this.createHandler(handler, property);
-                // Fix crash when video loads before c2js
+                // FIXED: crash when video loads first
                 if (isSubstr(event, 'loadeddata') && loadedData) {
                     if (loadedData) {
                         handler();
@@ -637,15 +626,14 @@ exports.c2js = c2js;
         }
         addShortcuts($ctrls) {
             $ctrls.each((_, el) => {
-                let keys = c2(el).data('shortcuts');
+                let $el = c2(el), keys = $el.data('shortcuts');
                 if (!keys) {
                     return;
                 }
                 keys.toLowerCase().split(' ').forEach((key) => {
                     if (key === 'dblclick') {
-                        let $el = c2(el);
                         this.$root.on(key, (e) => {
-                            if (!e.target.hasOnClick) {
+                            if (c2(e.target).config('dblClick') !== 'false') {
                                 $el.trigger('click');
                             }
                         }, true);
@@ -746,9 +734,9 @@ exports.c2js = c2js;
             }
         }
     }
-    c2js_1.Init = Init;
+    c2js.Init = Init;
     function c2(selector, context) { return new c2.Query(selector, context || DOC); }
-    c2js_1.c2 = c2;
+    c2js.c2 = c2;
     (function (c2) {
         class Query {
             constructor(selector, context) {
@@ -926,8 +914,14 @@ exports.c2js = c2js;
             get(index) {
                 return this.list[index];
             }
+            initProp(prop) {
+                return this.each((_, el) => { el[prop] = {}; });
+            }
             control(type) {
                 return this.find(`[c2-${type}]`);
+            }
+            notNull() {
+                return this.filter((_, el) => !el.hasAttribute('c2-null'));
             }
             custom(id) {
                 return this.find(`[c2-custom=${id}]`);
@@ -1008,5 +1002,5 @@ exports.c2js = c2js;
         }
         c2.cookie = cookie;
         c2.fn = Query.prototype;
-    })(c2 = c2js_1.c2 || (c2js_1.c2 = {}));
+    })(c2 = c2js.c2 || (c2js.c2 = {}));
 })(c2js = exports.c2js || (exports.c2js = {}));

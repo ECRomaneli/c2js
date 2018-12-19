@@ -140,11 +140,11 @@
     animation: rotating 2s linear infinite;
 }
 
-.mm-row > button[c2-move^='-'] {
+.mm-row > button[c2-skip^='-'] {
     background-image: url(../assets/icons/white/backward-solid.svg);
 }
 
-.mm-row > button[c2-move^='+'] {
+.mm-row > button[c2-skip^='+'] {
     background-image: url(../assets/icons/white/forward-solid.svg);
 }
 
