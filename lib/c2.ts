@@ -43,6 +43,9 @@ export function c2js(e?, c?, o?) {
 }
 
 export namespace c2js {
+    export interface DOC extends Document { [key: string]: any; }
+    export interface WIN extends Window { [key: string]: any; }
+    export interface C2Element extends HTMLElement { c2?: any; }
     export type Config = {
         saveWith?: 'none' | 'cookie' | 'localStorage',
         saveTime?: boolean,
@@ -72,9 +75,6 @@ export namespace c2js {
     };
     type ControlProperties = { [key: string]: ControlProperty };
     type BrokenNumber = { signal?: string, number: number, type?: string };
-    export interface DOC extends Document { [key: string]: any; }
-    export interface WIN extends Window { [key: string]: any; }
-    export interface C2Element extends HTMLElement { c2?: any; }
 
     export const APP_NAME = 'c2js';
     const DOC: DOC = document;
@@ -113,7 +113,7 @@ export namespace c2js {
         saveTime: false,
         speed: { min: 0, max: 3 },
         timer: 1000,
-        timeFormat: 'mm:ss'
+        timeFormat: 'auto'
     };
 
     // FIXED: On trying to access localStorage with file protocol at the Edge, thrown Exception.
@@ -124,61 +124,6 @@ export namespace c2js {
     }
 
     var FS_VAR;
-
-    // Verify if browser allow fullscreen and set the navPrefix and
-    // fullscreen functions
-    // FIX: This script dont grant if fullscreen is not supported.
-    function allowFullscreen(): boolean {
-        if (FS_VAR) { return FS_VAR.allowed; }
-
-        let FN: string[], $DOC = c2(DOC);
-
-        if (DOC.webkitFullscreenEnabled) {
-            FN = [
-                'webkitRequestFullscreen','webkitExitFullscreen',
-                'webkitFullscreenElement','webkitfullscreenchange',
-                'webkitfullscreenerror'
-            ];
-        } else if (DOC.webkitCancelFullScreen) {
-            FN = [
-                'webkitRequestFullScreen','webkitCancelFullScreen',
-                'webkitCurrentFullScreenElement','webkitfullscreenchange',
-                'webkitfullscreenerror'
-            ];
-        } else if (DOC.mozFullScreenEnabled) {
-            FN = [
-                'mozRequestFullScreen','mozCancelFullScreen',
-                'mozFullScreenElement','mozfullscreenchange',
-                'mozfullscreenerror'
-            ];
-        } else if (DOC.msFullscreenEnabled) {
-            FN = [
-                'msRequestFullscreen','msExitFullscreen',
-                'msFullscreenElement','MSFullscreenChange',
-                'MSFullscreenError'
-            ];
-        } else if (DOC.fullscreenEnabled) {
-            FN = [
-                'requestFullscreen','exitFullscreen',
-                'fullscreenElement','fullscreenchange',
-                'fullscreenerror'
-            ];
-        } else {
-            FS_VAR = { allowed: false };
-            return false;
-        }
-
-        FS_VAR = {
-            allowed: true,
-            enter: (el) => { el[FN[0]](); },
-            leave: () => { DOC[FN[1]](); },
-            check: () => DOC[FN[2]],
-            onChange: (h) => { $DOC.on(FN[3], h); },
-            onError: (h) => { $DOC.on(FN[4], h); }
-        };
-
-        return true;
-    }
 
     export function DOMReady(fn: Function): void {
         if (DOC.readyState !== 'loading') {
@@ -192,68 +137,6 @@ export namespace c2js {
         READY_INSTANCES.forEach((instance) => { fn.apply(instance.root, instance); })
         READY_HANDLERS.push(fn);
     }
-
-    // toggle values passed by param
-    export function toggleVal(value: any, toggle: any[]): any {
-        return toggle[value === toggle[0] ? 1 : 0];
-    }
-
-    function isNull(obj: any): boolean {
-        return obj !== void 0 && obj !== null;
-    }
-
-    // Get value, min or max if overflow
-    function minMaxVal(value: number, min: number, max: number): number {
-        return  value < min ? min : value > max ? max : value;
-    }
-
-    // Break down string number to 'signal', 'number' and 'unit'.
-    function breakNumber(number: string, typeTo: string, total?: number): BrokenNumber {
-        if (!number) { return { number: 0 }; }
-
-        let match = (number + '').match(/^(\D*)(\d|\.)+(\D*)$/),
-            broken = { signal: match[1], type: match[3], number: parseFloat(number) },
-            param = broken.type === '%' ? total : typeTo;
-
-        if (param) { parseNumber(broken, param); }
-        return broken;
-    }
-
-    // Convert number or resolve the porcentage
-    function parseNumber(broken: BrokenNumber, typeToOrTotal: string | number): void {
-        if (!broken.type) { return; }
-
-        if (typeof typeToOrTotal === 'number') {
-            broken.type = '';
-            broken.number *= typeToOrTotal / 100;
-            return;
-        }
-
-        let types = ['ms', 's', 'm', 'h', 'd'],
-            values = [  1000,  60,  60,  24  ],
-            indexFrom = types.indexOf(broken.type),
-            indexTo = types.indexOf(typeToOrTotal);
-
-        broken.type = typeToOrTotal;
-        while (indexFrom !== indexTo) {
-            if (indexFrom > indexTo) {
-                broken.number *= values[--indexFrom];
-            } else {
-                broken.number /= values[indexFrom++];
-            }
-        }
-    }
-
-    // Convert seconds to format HH:mm:ss
-    function convertTime(seconds: number): string {
-        let date = new Date(seconds * 1000), ISORange = [11, 8];
-        if (seconds < 3600) { ISORange = [14, 5]; }
-        return date.toISOString().substr(ISORange[0], ISORange[1]);
-    }
-
-    function isSubstr(str: string, substr: string): boolean {
-        return str.indexOf(substr) !== -1;
-    } 
 
     export class Init {
         public id: string;
@@ -465,6 +348,10 @@ export namespace c2js {
                 this.root.focus();
                 e.stopPropagation();
             }, true);
+        }
+
+        private getConfig(el: C2Element, cfg: string): any {
+            return c2(el).config(cfg) || this.config[cfg];
         }
 
         private ctrls: ControlProperties = {
@@ -680,6 +567,12 @@ export namespace c2js {
             },
 
             time: {
+                ready: function (e) {
+                    e.$all.each((_, el) => {
+                        el.c2.timeFormat = e.context.getConfig(el, 'timeFormat');
+                        el.c2.attr = c2(el).config('attr');
+                    });
+                },
                 helpers: {
                     update: function (el, media) {
                         let time = media.currentTime, prefix = '';
@@ -689,7 +582,11 @@ export namespace c2js {
                             prefix = '-';
                         }
     
-                        c2(el).text(prefix + convertTime(time));
+                        if (el.c2.attr) {
+                            c2(el).attr(el.c2.attr, prefix + formatTime(time, el.c2.timeFormat));
+                        } else {
+                            c2(el).text(prefix + formatTime(time, el.c2.timeFormat));
+                        }
                     }
                 },
                 events: {
@@ -708,16 +605,21 @@ export namespace c2js {
             },
 
             duration: {
+                ready: function (e) {
+                    e.$all.each((_, el) => {
+                        el.c2.timeFormat = e.context.getConfig(el, 'timeFormat');
+                        el.c2.attr = c2(el).config('attr');
+                    });
+                },
                 media: {
                     'loadeddata durationchange': function (e) {
                         e.$all.each((_, el) => {
-                            let time = e.media.duration,
-                                attr = c2(el).data('duration');
+                            let time = e.media.duration;
                             
-                            if (attr) {
-                                c2(el).attr(attr, convertTime(time));
+                            if (el.c2.attr) {
+                                c2(el).attr(el.c2.attr, formatTime(time, el.c2.timeFormat));
                             } else {
-                                c2(el).text(convertTime(time));
+                                c2(el).text(formatTime(time, el.c2.timeFormat));
                             }
                         });
                     }
@@ -753,7 +655,7 @@ export namespace c2js {
                 ready: function (e) {
                     // Initialize c2.timer and c2.maxTimer
                     e.$all.each((_, el) => {
-                        el.c2.timer = c2(this).config('timer') || e.context.config.timer;
+                        el.c2.timer = e.context.getConfig(el, 'timer');
                     });
                 },
 
@@ -856,6 +758,159 @@ export namespace c2js {
             }
         }
     }
+
+    // Verify if browser allow fullscreen and set the navPrefix and
+    // fullscreen functions
+    // FIX: This script dont grant if fullscreen is not supported.
+    function allowFullscreen(): boolean {
+        if (FS_VAR) { return FS_VAR.allowed; }
+
+        let FN: string[], $DOC = c2(DOC);
+
+        if (DOC.webkitFullscreenEnabled) {
+            FN = [
+                'webkitRequestFullscreen','webkitExitFullscreen',
+                'webkitFullscreenElement','webkitfullscreenchange',
+                'webkitfullscreenerror'
+            ];
+        } else if (DOC.webkitCancelFullScreen) {
+            FN = [
+                'webkitRequestFullScreen','webkitCancelFullScreen',
+                'webkitCurrentFullScreenElement','webkitfullscreenchange',
+                'webkitfullscreenerror'
+            ];
+        } else if (DOC.mozFullScreenEnabled) {
+            FN = [
+                'mozRequestFullScreen','mozCancelFullScreen',
+                'mozFullScreenElement','mozfullscreenchange',
+                'mozfullscreenerror'
+            ];
+        } else if (DOC.msFullscreenEnabled) {
+            FN = [
+                'msRequestFullscreen','msExitFullscreen',
+                'msFullscreenElement','MSFullscreenChange',
+                'MSFullscreenError'
+            ];
+        } else if (DOC.fullscreenEnabled) {
+            FN = [
+                'requestFullscreen','exitFullscreen',
+                'fullscreenElement','fullscreenchange',
+                'fullscreenerror'
+            ];
+        } else {
+            FS_VAR = { allowed: false };
+            return false;
+        }
+
+        FS_VAR = {
+            allowed: true,
+            enter: (el) => { el[FN[0]](); },
+            leave: () => { DOC[FN[1]](); },
+            check: () => DOC[FN[2]],
+            onChange: (h) => { $DOC.on(FN[3], h); },
+            onError: (h) => { $DOC.on(FN[4], h); }
+        };
+
+        return true;
+    }
+
+    // toggle values passed by param
+    export function toggleVal(value: any, toggle: any[]): any {
+        return toggle[value === toggle[0] ? 1 : 0];
+    }
+
+    function isNull(obj: any): boolean {
+        return obj !== void 0 && obj !== null;
+    }
+
+    // Get value, min or max if overflow
+    function minMaxVal(value: number, min: number, max: number): number {
+        return  value < min ? min : value > max ? max : value;
+    }
+
+    // Break down string number to 'signal', 'number' and 'unit'.
+    function breakNumber(number: string, typeTo: string, total?: number): BrokenNumber {
+        if (!number) { return { number: 0 }; }
+
+        let match = (number + '').match(/^(\D*)(\d|\.)+(\D*)$/),
+            broken = { signal: match[1], type: match[3], number: parseFloat(number) },
+            param = broken.type === '%' ? total : typeTo;
+
+        if (param) { parseNumber(broken, param); }
+        return broken;
+    }
+
+    // Convert number or resolve the porcentage
+    function parseNumber(broken: BrokenNumber, typeToOrTotal: string | number): void {
+        if (!broken.type) { return; }
+
+        if (typeof typeToOrTotal === 'number') {
+            broken.type = '';
+            broken.number *= typeToOrTotal / 100;
+            return;
+        }
+
+        let types = ['ms', 's', 'm', 'h', 'd'],
+            values = [  1000,  60,  60,  24  ],
+            indexFrom = types.indexOf(broken.type),
+            indexTo = types.indexOf(typeToOrTotal);
+
+        broken.type = typeToOrTotal;
+        while (indexFrom !== indexTo) {
+            if (indexFrom > indexTo) {
+                broken.number *= values[--indexFrom];
+            } else {
+                broken.number /= values[indexFrom++];
+            }
+        }
+    }
+
+    /**
+     * Pad with zeros.
+     * @param num number
+     * @param pads number of pads
+     * @param right pad right?
+     */
+    function pad(num: any, pads: number, right: boolean = false): string {
+        if (!num && num != 0) {return pad(0, pads, right); }
+        let zeros = '';
+        num = parseInt(num);
+        for (let i = 0; i < pads; i++) { zeros += '0'; }
+        if (right) { return (num + zeros).slice(0, pads); }
+        return (zeros + num).slice(pads * -1);
+    }
+
+    /**
+     * Format time using string.
+     * DD:hh:mm:ss.u
+     * @param format format string
+     * @return formated time
+     */
+    function formatTime(seconds: number, format: string): string {
+        let date = new Date(seconds * 1000);
+
+        if (format === 'auto') {
+            format = 'mm:ss';
+            if (date.getUTCHours() > 0) {
+                format = (date.getUTCHours() > 9 ? 'hh:' : 'h:') + format;
+            }
+            if (date.getUTCDate() > 1) { // BEGINS WITH DAY 1
+                format = (date.getUTCDate() > 10 ? 'dd:' : 'd:') + format;
+            }
+        }
+
+        return format.replace(/([sSmMhHdD])\1*/g, (type) => {
+            let ch = type.charAt(0).toLowerCase(), length = type.length;
+            if (ch === 'd') {return pad(date.getUTCDate() - 1, length); }
+            if (ch === 'h') {return pad(date.getUTCHours(), length); }
+            if (ch === 'm') {return pad(date.getUTCMinutes(), length); }
+            return pad(date.getUTCSeconds(), length);
+        });
+    }
+
+    function isSubstr(str: string, substr: string): boolean {
+        return str.indexOf(substr) !== -1;
+    } 
 
     export function c2(selector, context?): c2.Query { return new c2.Query(selector, context || DOC); }
 
@@ -1057,7 +1112,7 @@ export namespace c2js {
             }
 
             public initProp(prop: string): Query {
-                return this.each((_, el) => { el[prop] = {}; });
+                return this.each((_, el) => { !isSet(el[prop]) && (el[prop] = {}); });
             }
 
             public control(type: string): Query {
@@ -1076,6 +1131,8 @@ export namespace c2js {
                 return this.first().attr(`c2-config:${config}`);
             }
         }
+
+        
 
         function isArrayLike(obj): boolean {
             if (Array.isArray && Array.isArray(obj)) { return true }
