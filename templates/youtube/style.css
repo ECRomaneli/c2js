@@ -35,6 +35,11 @@
 
 /* --- Media ------------------------------------------------------------- */
 
+.yt-stage {
+    position: absolute;
+    inset: 0;
+}
+
 /* The click surface owns c2-play so clicks on the video toggle playback.
    Putting it here instead of on <video> keeps double-click fullscreen working. */
 .yt-surface {
@@ -70,6 +75,15 @@
     opacity: 1;
     visibility: visible;
     transition: opacity .2s ease;
+}
+
+/* c2-hide-mouse writes `cursor: none` inline on the stage after the idle
+   delay. Use it to hide the chrome too, so the menu disappears even with the
+   pointer resting over the player. */
+.yt-player[c2-status~="play"] .yt-stage[style*="cursor: none"] .yt-chrome {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s ease, visibility 0s linear .2s;
 }
 
 .yt-top {

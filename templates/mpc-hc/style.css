@@ -1,211 +1,253 @@
-/*
- * MPC-HC theme, ported from templates/mpc-hc/style.css.
+/* -------------------------------------------------------------------------
+ * MPC-HC theme for C2JS
  *
- * The C2JS version styles by attribute value: [c2-play=true] means playing.
- * Video.js reflects state the same way, with data attributes:
- * [data-paused] means paused, so some selectors are inverted.
- */
+ * Media Player Classic inspired control bar: a light control row on top of a
+ * black status line, revealed while the pointer is over the bar. Plain markup
+ * and CSS on top of the c2-* controls, no scripting.
+ * ---------------------------------------------------------------------- */
 
-.c2js {
+.mpc-player {
+    --mpc-surface: #f8f8f8;
+    --mpc-info-bg: #000;
+    --mpc-info-color: #fff;
+    --mpc-divider: #b5b5b5;
+    --mpc-accent: #3a7bd5;
     position: relative;
     display: block;
-    background-color: black;
+    overflow: hidden;
+    background: #000;
+    color: var(--mpc-info-color);
+    font-family: monospace, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.c2js video {
+
+/* --- Media ------------------------------------------------------------- */
+
+.mpc-surface {
+    display: block;
+    line-height: 0;
+    cursor: inherit;
+}
+
+.mpc-video {
     display: block;
     width: 100%;
+    height: 100%;
+    background: #000;
+    object-fit: contain;
+    cursor: inherit;
 }
 
-.c2-bar {
+/* --- Bar (auto hiding overlay) ----------------------------------------- */
+
+.mpc-bar {
     position: absolute;
-    width: 100%;
-    bottom: 0;
+    inset: auto 0 0;
     opacity: 0;
     cursor: default;
+    transition: opacity .2s ease;
 }
 
-/* Keep the bar up while something inside it holds keyboard focus. */
-.c2-bar:hover,
-.c2-bar:has(:focus-visible) {
+.mpc-bar:hover,
+.mpc-bar:focus-within {
     opacity: 1;
 }
 
-.c2-controls {
-    background-color: #f8f8f8;
-    overflow: hidden;
-    height: 56px;
-    padding: 6px 12px 0;
+/* --- Control row ------------------------------------------------------- */
+
+.mpc-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 12px;
+    background: var(--mpc-surface);
 }
 
-.c2-group {
-    display: block;
-}
-
-.c2-btn {
-    display: inline-block;
-    background-color: transparent;
-    border: none;
+.mpc-seek,
+.mpc-volume {
+    height: 20px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--mpc-accent);
+    color-scheme: light;
     cursor: pointer;
+}
+
+.mpc-seek {
+    flex: 0 0 100%;
+    width: 100%;
+}
+
+.mpc-volume {
+    flex: none;
+    width: 100px;
+    max-width: 30vw;
+}
+
+.mpc-btn {
+    flex: none;
     width: 32px;
     height: 32px;
+    margin: 0;
     padding: 0;
-    vertical-align: middle;
-
-    background-repeat: no-repeat;
-    background-size: 100% 65%;
-    background-position: center;
+    border: 0;
+    border-radius: 4px;
+    background: transparent center / 100% 65% no-repeat;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color .15s ease, transform .1s ease;
 }
 
-.c2-info-bar {
-    background-color: #000;
-    color: #fff;
-    font-family: monospace, helvetica, sans-serif;
-    font-size: 12px;
-    display: block;
-    padding: 3px 8px;
+.mpc-btn:hover {
+    background-color: rgba(0, 0, 0, .08);
 }
 
-.c2-divider, .c2-align-right {
-    display: inline-block;
+.mpc-btn:active {
+    transform: scale(.92);
 }
 
-.c2-divider {
+.mpc-btn:focus-visible {
+    outline: 2px solid var(--mpc-accent);
+    outline-offset: -2px;
+}
+
+.mpc-divider {
+    flex: none;
     width: 1px;
     height: 32px;
-    background: gray;
-    position: absolute;
+    margin: 0 4px;
+    background: var(--mpc-divider);
 }
 
-.c2-align-right {
-    float: right;
-}
-
-/* --- Sliders -----------------------------------------------------------
- * C2JS reuses <input type="range">, which the browser styles for free.
- * Video.js sliders are composed elements, so the track, fill, buffer and
- * thumb each need rules. More markup, but a buffered-range bar comes with it.
- */
-
-.c2-time-seek {
-    position: relative;
+.mpc-group {
     display: flex;
     align-items: center;
-    height: 20px;
-    width: 100%;
-    cursor: pointer;
+    gap: 4px;
 }
 
-.c2-volume-seek {
-    position: relative;
-    display: inline-flex;
+.mpc-right {
+    margin-left: auto;
+}
+
+/* --- Info bar ---------------------------------------------------------- */
+
+.mpc-info-bar {
+    display: flex;
     align-items: center;
-    vertical-align: middle;
-    width: 100px;
-    height: 20px;
-    margin-left: 4px;
-    cursor: pointer;
+    gap: 8px;
+    padding: 4px 8px;
+    background: var(--mpc-info-bg);
+    color: var(--mpc-info-color);
+    line-height: 1.4;
 }
 
-.c2-track {
-    position: relative;
-    width: 100%;
-    height: 6px;
-    background: #c9c9c9;
-    border: 1px solid #a0a0a0;
+.mpc-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
-.c2-buffer, .c2-fill {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-}
-
-.c2-buffer {
-    width: var(--media-slider-buffer);
-    background: #a8c8e8;
-}
-
-.c2-fill {
-    width: var(--media-slider-fill);
-    background: #3a7bd5;
-}
-
-.c2-thumb {
-    position: absolute;
-    left: var(--media-slider-fill);
-    width: 10px;
-    height: 16px;
-    background: #f0f0f0;
-    border: 1px solid #707070;
-    translate: -50% 0;
+.mpc-time-sep {
+    opacity: .6;
 }
 
 /* --- Icons ------------------------------------------------------------- */
 
-.c2-play {
-    background-image: url(../assets/icons/pause-solid.svg);
+.mpc-btn[c2-play] {
+    background-image: url(assets/icons/play-solid.svg);
 }
 
-/* Inverted against C2JS: data-paused is present while paused. */
-.c2-play[data-paused] {
-    background-image: url(../assets/icons/play-solid.svg);
+.mpc-btn[c2-play="true"] {
+    background-image: url(assets/icons/pause-solid.svg);
 }
 
-.c2-stop {
-    background-image: url(../assets/icons/stop-solid.svg);
+.mpc-btn[c2-stop] {
+    background-image: url(assets/icons/stop-solid.svg);
 }
 
-.c2-seek[data-direction='backward'] {
-    background-image: url(../assets/icons/backward-solid.svg);
+.mpc-btn[c2-move^="-"] {
+    background-image: url(assets/icons/backward-solid.svg);
 }
 
-.c2-seek[data-direction='forward'] {
-    background-image: url(../assets/icons/forward-solid.svg);
+.mpc-btn[c2-move^="+"] {
+    background-image: url(assets/icons/forward-solid.svg);
 }
 
-.c2-mute {
-    background-image: url(../assets/icons/volume-up-solid.svg);
+.mpc-btn[c2-mute] {
+    background-image: url(assets/icons/volume-up-solid.svg);
 }
 
-.c2-mute[data-muted] {
-    background-image: url(../assets/icons/volume-mute-solid.svg);
+.mpc-btn[c2-mute="true"] {
+    background-image: url(assets/icons/volume-mute-solid.svg);
 }
 
-.c2-fullscreen {
-    background-image: url(../assets/icons/expand-solid.svg);
+.mpc-btn[c2-fullscreen] {
+    background-image: url(assets/icons/expand-solid.svg);
 }
 
-.c2-fullscreen[data-fullscreen] {
-    background-image: url(../assets/icons/compress-solid.svg);
+.mpc-btn[c2-fullscreen="true"] {
+    background-image: url(assets/icons/compress-solid.svg);
 }
 
-/* C2JS marks unsupported fullscreen with [c2-fullscreen=null] and dims it.
-   Video.js applies the native `hidden` attribute instead, so this only has
-   to cover the available-but-disabled case. */
-.c2-fullscreen[data-disabled] {
+.mpc-btn[c2-fullscreen="null"] {
     opacity: .3;
+    cursor: default;
 }
 
 /* --- Status line ------------------------------------------------------- */
 
-.c2-status[data-status='loading']::after {
+.mpc-status[c2-null]::after {
     content: "Loading...";
 }
 
-.c2-status[data-status='paused']::after {
+.mpc-status[c2-null][c2-play="false"]::after {
     content: "Paused";
 }
 
-.c2-status[data-status='stopped']::after {
+.mpc-status[c2-null][c2-stop="true"]::after {
     content: "Stopped";
 }
 
-.c2-status[data-status='playing']::after {
+.mpc-status[c2-null][c2-play="true"]::after {
     content: "Playing";
 }
 
-.c2-status[data-muted]::before {
+.mpc-status[c2-null][c2-mute="true"]::before {
     content: "[MUTED] ";
+}
+
+/* --- Responsive -------------------------------------------------------- */
+
+@media (max-width: 480px) {
+    .mpc-controls {
+        padding: 6px 8px;
+    }
+
+    .mpc-btn {
+        width: 30px;
+        height: 30px;
+    }
+
+    .mpc-divider {
+        height: 30px;
+        margin: 0 2px;
+    }
+
+    .mpc-volume {
+        width: 72px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mpc-bar,
+    .mpc-btn {
+        transition: none;
+    }
 }

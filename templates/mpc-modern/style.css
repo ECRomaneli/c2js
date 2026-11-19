@@ -1,0 +1,319 @@
+/* -------------------------------------------------------------------------
+ * Modern MPC theme for C2JS
+ *
+ * Same markup as the classic MPC template - seek on top, transport row, then
+ * the status/time line - restyled as a dark glass panel with accent controls
+ * and smooth motion. Only CSS differs; no scripting.
+ * ---------------------------------------------------------------------- */
+
+.mpc-player {
+    --mpc-accent: #6d8cff;
+    --mpc-accent-strong: #8aa1ff;
+    --mpc-glass: rgba(12, 13, 18, .78);
+    --mpc-line: rgba(255, 255, 255, .1);
+    --mpc-muted: rgba(255, 255, 255, .6);
+
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #000;
+    color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 13px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mpc-player[c2-status~="fullscreen"] {
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.mpc-player[c2-status~="fullscreen"] .mpc-surface {
+    height: 100%;
+}
+
+/* --- Media ------------------------------------------------------------- */
+
+.mpc-surface {
+    display: block;
+    line-height: 0;
+}
+
+.mpc-video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    object-fit: contain;
+    cursor: inherit;
+}
+
+/* --- Bar (glass overlay) ----------------------------------------------- */
+
+.mpc-bar {
+    position: absolute;
+    inset: auto 0 0;
+    z-index: 2;
+    background: linear-gradient(to top,
+        rgba(9, 10, 14, .96) 0%,
+        var(--mpc-glass) 100%);
+    border-top: 1px solid var(--mpc-line);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+    opacity: 0;
+    cursor: default;
+    transform: translateY(10px);
+    transition: opacity .25s ease, transform .25s ease;
+}
+
+.mpc-bar::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--mpc-accent), transparent);
+    opacity: .65;
+}
+
+.mpc-bar:hover {
+    opacity: 1;
+    transform: none;
+}
+
+/* --- Control row ------------------------------------------------------- */
+
+.mpc-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 16px 4px;
+}
+
+.mpc-seek,
+.mpc-volume {
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    accent-color: var(--mpc-accent);
+    color-scheme: dark;
+    cursor: pointer;
+}
+
+.mpc-seek {
+    flex: 0 0 100%;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.mpc-volume {
+    flex: none;
+    width: 96px;
+    max-width: 28vw;
+}
+
+.mpc-seek:focus-visible,
+.mpc-volume:focus-visible {
+    outline: 2px solid var(--mpc-accent);
+    outline-offset: 2px;
+}
+
+.mpc-btn {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent center / 18px 18px no-repeat;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color .15s ease, transform .12s ease, opacity .15s ease;
+}
+
+.mpc-btn:hover {
+    background-color: rgba(255, 255, 255, .1);
+}
+
+.mpc-btn:active {
+    transform: scale(.92);
+}
+
+.mpc-btn:focus-visible {
+    outline: 2px solid var(--mpc-accent);
+    outline-offset: 1px;
+}
+
+.mpc-btn[c2-play] {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background-color: var(--mpc-accent);
+    background-size: 16px 16px;
+    box-shadow: 0 4px 14px rgba(109, 140, 255, .35);
+}
+
+.mpc-btn[c2-play]:hover {
+    background-color: var(--mpc-accent-strong);
+}
+
+.mpc-divider {
+    flex: none;
+    width: 1px;
+    height: 22px;
+    margin: 0 4px;
+    background: var(--mpc-line);
+}
+
+.mpc-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.mpc-right {
+    margin-left: auto;
+}
+
+/* --- Info line --------------------------------------------------------- */
+
+.mpc-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 2px 16px 12px;
+    color: var(--mpc-muted);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.mpc-status {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .06);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+}
+
+.mpc-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.mpc-time-sep {
+    opacity: .45;
+}
+
+/* --- Icons ------------------------------------------------------------- */
+
+.mpc-btn[c2-play] {
+    background-image: url(assets/icons/white/play-solid.svg);
+}
+
+.mpc-btn[c2-play="true"] {
+    background-image: url(assets/icons/white/pause-solid.svg);
+}
+
+.mpc-btn[c2-stop] {
+    background-image: url(assets/icons/white/stop-solid.svg);
+}
+
+.mpc-btn[c2-move^="-"] {
+    background-image: url(assets/icons/white/backward-solid.svg);
+}
+
+.mpc-btn[c2-move^="+"] {
+    background-image: url(assets/icons/white/forward-solid.svg);
+}
+
+.mpc-btn[c2-mute] {
+    background-image: url(assets/icons/white/volume-up-solid.svg);
+}
+
+.mpc-btn[c2-mute="true"] {
+    background-image: url(assets/icons/white/volume-mute-solid.svg);
+}
+
+.mpc-btn[c2-fullscreen] {
+    background-image: url(assets/icons/white/expand-solid.svg);
+}
+
+.mpc-btn[c2-fullscreen="true"] {
+    background-image: url(assets/icons/white/compress-solid.svg);
+}
+
+.mpc-btn[c2-fullscreen="null"] {
+    opacity: .3;
+    cursor: default;
+}
+
+/* --- Status text ------------------------------------------------------- */
+
+.mpc-status[c2-null]::after {
+    content: "Loading...";
+}
+
+.mpc-status[c2-null][c2-play="false"]::after {
+    content: "Paused";
+}
+
+.mpc-status[c2-null][c2-stop="true"]::after {
+    content: "Stopped";
+}
+
+.mpc-status[c2-null][c2-play="true"]::after {
+    content: "Playing";
+    color: var(--mpc-accent-strong);
+}
+
+.mpc-status[c2-null][c2-mute="true"]::before {
+    content: "[MUTED] ";
+    color: #ffb86c;
+}
+
+/* --- Responsive -------------------------------------------------------- */
+
+@media (max-width: 560px) {
+    .mpc-controls {
+        padding: 10px 12px 2px;
+    }
+
+    .mpc-info-bar {
+        padding: 2px 12px 10px;
+    }
+
+    .mpc-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background-size: 16px 16px;
+    }
+
+    .mpc-btn[c2-play] {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+    }
+
+    .mpc-volume {
+        width: 70px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mpc-bar,
+    .mpc-btn {
+        transition: none;
+    }
+}

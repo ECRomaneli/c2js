@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../dist/web/c2.css" type="text/css" />
+<script type="text/javascript" src="../../dist/web/c2.js"></script>
+<script>c2js('[c2js]', { saveTime: true })</script>
+
+
+<!-- C2 Theme -->
+<link rel="stylesheet" href="style.css" type="text/css" />
+
+
+<div c2js class="mm-player">
+    <input class="mm-toggle" type="checkbox" id="mm-menu" checked hidden>
+
+    <div class="mm-stage" c2-hide-mouse="1000">
+        <video class="mm-video" src="assets/sample.mp4"></video>
+
+        <div class="mm-zones">
+            <button class="mm-zone" type="button" c2-move="-5" aria-label="Back 5 seconds"></button>
+            <button class="mm-zone" type="button" c2-play aria-label="Play or pause"></button>
+            <button class="mm-zone" type="button" c2-move="+5" aria-label="Forward 5 seconds"></button>
+        </div>
+    </div>
+
+    <label class="mm-reveal" for="mm-menu" aria-label="Show controls"></label>
+
+    <div class="mm-overlay">
+        <label class="mm-grid" for="mm-menu" aria-label="Hide controls"></label>
+
+        <div class="mm-center">
+            <button class="mm-btn mm-seek" type="button" c2-move="-5" c2-shortcuts="left" aria-label="Back 5 seconds"></button>
+            <button class="mm-btn mm-play" type="button" c2-play c2-loading c2-shortcuts="space" aria-label="Play"></button>
+            <button class="mm-btn mm-seek" type="button" c2-move="+5" c2-shortcuts="right" aria-label="Forward 5 seconds"></button>
+        </div>
+
+        <div class="mm-bottom">
+            <div class="mm-time">
+                <span c2-time="current">00:00</span>
+                <span class="mm-time-sep" aria-hidden="true">/</span>
+                <span c2-duration>00:00</span>
+            </div>
+
+            <input class="mm-range" c2-time-seek type="range" aria-label="Seek">
+
+            <div class="mm-actions">
+                <div class="mm-volume">
+                    <button class="mm-btn" type="button" c2-mute c2-shortcuts="m" aria-label="Mute"></button>
+                    <input class="mm-volume-range" c2-volume-seek type="range" aria-label="Volume">
+                    <input type="hidden" c2-volume="+10%" c2-shortcuts="up">
+                    <input type="hidden" c2-volume="-10%" c2-shortcuts="down">
+                </div>
+
+                <button class="mm-btn" type="button" c2-fullscreen c2-shortcuts="f enter" aria-label="Full screen"></button>
+            </div>
+        </div>
+    </div>
+</div>

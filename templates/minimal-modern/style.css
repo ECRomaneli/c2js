@@ -1,0 +1,373 @@
+/* -------------------------------------------------------------------------
+ * Modern minimal theme for C2JS
+ *
+ * Mobile first: big centered transport buttons, a grouped volume cluster and
+ * three tap zones on the video (left: -5s, middle: play/pause, right: +5s).
+ * The grid button in the corner is the only control that shows/hides the
+ * overlay. Toggling is done with a hidden checkbox, no scripting.
+ * ---------------------------------------------------------------------- */
+
+.mm-player {
+    --mm-accent: #2ee6c5;
+    --mm-text: #f4f7fa;
+    --mm-muted: rgba(255, 255, 255, .62);
+    --mm-line: rgba(255, 255, 255, .12);
+
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 80vh;
+    overflow: hidden;
+    background: #000;
+    color: var(--mm-text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* --- Media and tap zones ----------------------------------------------- */
+
+.mm-stage {
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+}
+
+.mm-video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    object-fit: contain;
+    cursor: inherit;
+}
+
+.mm-zones {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+}
+
+.mm-zone {
+    flex: 1 1 33.3333%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: inherit;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color .12s ease;
+}
+
+.mm-zone:active {
+    background-color: rgba(255, 255, 255, .06);
+}
+
+/* Only active while the overlay is hidden, so a tap on the video brings the
+   controls back instead of triggering a third-zone action. */
+.mm-reveal {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mm-toggle:checked ~ .mm-reveal {
+    pointer-events: none;
+}
+
+/* --- Grid toggle ------------------------------------------------------- */
+
+.mm-grid {
+    position: absolute;
+    top: calc(12px + env(safe-area-inset-top));
+    right: 14px;
+    z-index: 2;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(10, 12, 18, .45) url(assets/icons/white/th-solid.svg) center / 22px 22px no-repeat;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color .15s ease, transform .1s ease;
+}
+
+.mm-grid:hover {
+    background-color: rgba(10, 12, 18, .72);
+}
+
+.mm-grid:active {
+    transform: scale(.94);
+}
+
+/* --- Overlay ----------------------------------------------------------- */
+
+.mm-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: calc(14px + env(safe-area-inset-top)) 0 0;
+    background: linear-gradient(180deg,
+        rgba(6, 9, 14, .62) 0%,
+        rgba(6, 9, 14, .18) 42%,
+        rgba(6, 9, 14, .9) 100%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .22s ease, visibility 0s linear .22s;
+}
+
+/* Only the grid button toggles this. Empty overlay space falls through to
+   the tap zones, so tapping the video never hides the controls. */
+.mm-toggle:checked ~ .mm-overlay {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity .22s ease;
+}
+
+.mm-center {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: center;
+    align-content: center;
+    justify-items: center;
+}
+
+/* The whole bottom strip absorbs pointer events, so taps around the seek and
+   volume controls never fall through to the third-zone actions. */
+.mm-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
+    padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+    pointer-events: auto;
+}
+
+/* --- Buttons ----------------------------------------------------------- */
+
+.mm-btn {
+    flex: none;
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent center / 24px 24px no-repeat;
+    color: #fff;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: background-color .15s ease, transform .1s ease, opacity .15s ease;
+}
+
+.mm-btn:hover {
+    background-color: rgba(255, 255, 255, .12);
+}
+
+.mm-btn:active {
+    transform: scale(.94);
+}
+
+.mm-btn:focus-visible {
+    outline: 2px solid var(--mm-accent);
+    outline-offset: 2px;
+}
+
+.mm-seek {
+    width: 54px;
+    height: 54px;
+    background-color: rgba(255, 255, 255, .05);
+    background-size: 22px 22px;
+}
+
+.mm-play {
+    width: 78px;
+    height: 78px;
+    border: 1px solid rgba(255, 255, 255, .22);
+    background-color: rgba(255, 255, 255, .1);
+    background-size: 30px 30px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, .45);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+.mm-play:hover {
+    background-color: rgba(255, 255, 255, .18);
+}
+
+/* --- Info and seek ----------------------------------------------------- */
+
+.mm-time {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-left: 4px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: var(--mm-muted);
+}
+
+.mm-time [c2-time] {
+    font-weight: 600;
+    color: var(--mm-text);
+}
+
+.mm-time-sep {
+    opacity: .4;
+}
+
+.mm-range {
+    width: 100%;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    accent-color: var(--mm-accent);
+    color-scheme: dark;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.mm-range:focus-visible {
+    outline: 2px solid var(--mm-accent);
+    outline-offset: 2px;
+}
+
+/* --- Volume cluster and actions ---------------------------------------- */
+
+.mm-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.mm-volume {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    max-width: 280px;
+}
+
+.mm-volume-range {
+    flex: 1;
+    min-width: 0;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    accent-color: var(--mm-accent);
+    color-scheme: dark;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.mm-volume-range:focus-visible {
+    outline: 2px solid var(--mm-accent);
+    outline-offset: 2px;
+}
+
+.mm-actions .mm-btn,
+.mm-volume .mm-btn {
+    width: 52px;
+    height: 52px;
+    background-size: 24px 24px;
+}
+
+/* --- Icons ------------------------------------------------------------- */
+
+.mm-btn[c2-play] {
+    background-image: url(assets/icons/white/play-solid.svg);
+}
+
+.mm-btn[c2-play="true"] {
+    background-image: url(assets/icons/white/pause-solid.svg);
+}
+
+.mm-btn[c2-move^="-"] {
+    background-image: url(assets/icons/white/backward-solid.svg);
+}
+
+.mm-btn[c2-move^="+"] {
+    background-image: url(assets/icons/white/forward-solid.svg);
+}
+
+.mm-btn[c2-mute] {
+    background-image: url(assets/icons/white/volume-up-solid.svg);
+}
+
+.mm-btn[c2-mute="true"] {
+    background-image: url(assets/icons/white/volume-mute-solid.svg);
+}
+
+.mm-btn[c2-fullscreen] {
+    background-image: url(assets/icons/white/expand-solid.svg);
+}
+
+.mm-btn[c2-fullscreen="true"] {
+    background-image: url(assets/icons/white/compress-solid.svg);
+}
+
+.mm-btn[c2-fullscreen="null"] {
+    opacity: .3;
+    cursor: default;
+}
+
+.mm-btn[c2-loading="true"] {
+    background-image: url(assets/icons/white/spinner-solid.svg);
+    animation: mm-spin 1s linear infinite;
+}
+
+@keyframes mm-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --- Responsive -------------------------------------------------------- */
+
+@media (max-width: 380px) {
+    .mm-btn {
+        width: 44px;
+        height: 44px;
+        background-size: 22px 22px;
+    }
+
+    .mm-seek {
+        width: 48px;
+        height: 48px;
+    }
+
+    .mm-play {
+        width: 68px;
+        height: 68px;
+        background-size: 26px 26px;
+    }
+
+    .mm-actions .mm-btn,
+    .mm-volume .mm-btn {
+        width: 46px;
+        height: 46px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mm-overlay,
+    .mm-btn,
+    .mm-zone {
+        transition: none;
+    }
+}

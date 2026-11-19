@@ -7,38 +7,42 @@
 <link rel="stylesheet" href="style.css" type="text/css" />
 
 
-<div c2js>
-    <video src="../assets/sample.mp4" c2-play c2-hide-mouse='1000'></video>
-    <div class="c2-bar">
-        <div class="c2-controls">
-            <input c2-time-seek type="range">
-            
-            <button c2-play c2-shortcuts='space'></button>
-            <button c2-stop></button>
-            
-            <div class="c2-divider"></div>
-            
-            <button c2-move='-5' c2-shortcuts='a arrowleft'></button>
-            <button c2-move='+5' c2-shortcuts='d arrowright'></button>
-            
-            <div class="c2-divider"></div>
-            
-            <button c2-fullscreen c2-shortcuts='f enter'></button>
-            
-            <div class="c2-divider"></div>
-            
-            <div class="c2-align-right">
-                <button c2-mute c2-shortcuts='m'></button>
-                <input c2-volume-seek type="range">
-                <input type="hidden" c2-volume='-5%' c2-shortcuts='s arrowdown'>
-                <input type="hidden" c2-volume='+5%' c2-shortcuts='w arrowup'>
+<div c2js class="mpc-player">
+    <div class="mpc-surface" c2-play c2-hide-mouse="1000">
+        <video class="mpc-video" src="assets/sample.mp4"></video>
+    </div>
+
+    <div class="mpc-bar">
+        <div class="mpc-controls">
+            <input class="mpc-seek" c2-time-seek type="range" aria-label="Seek">
+
+            <button class="mpc-btn" type="button" c2-play c2-shortcuts="space" aria-label="Play"></button>
+            <button class="mpc-btn" type="button" c2-stop aria-label="Stop"></button>
+
+            <span class="mpc-divider" aria-hidden="true"></span>
+
+            <button class="mpc-btn" type="button" c2-move="-5" c2-shortcuts="a arrowleft" aria-label="Back 5 seconds"></button>
+            <button class="mpc-btn" type="button" c2-move="+5" c2-shortcuts="d arrowright" aria-label="Forward 5 seconds"></button>
+
+            <span class="mpc-divider" aria-hidden="true"></span>
+
+            <button class="mpc-btn" type="button" c2-fullscreen c2-shortcuts="f enter dblclick" aria-label="Full screen"></button>
+
+            <span class="mpc-divider" aria-hidden="true"></span>
+
+            <div class="mpc-group mpc-right">
+                <button class="mpc-btn" type="button" c2-mute c2-shortcuts="m" aria-label="Mute"></button>
+                <input class="mpc-volume" c2-volume-seek type="range" aria-label="Volume">
+                <input type="hidden" c2-volume="-5%" c2-shortcuts="s arrowdown">
+                <input type="hidden" c2-volume="+5%" c2-shortcuts="w arrowup">
             </div>
         </div>
 
-        <div class="c2-info-bar">
-            <span c2-null c2-status c2-play c2-stop c2-mute></span>
-            <div class="c2-align-right">
-                <span c2-time='current'>00:00</span> /
+        <div class="mpc-info-bar">
+            <span class="mpc-status" c2-null c2-status c2-play c2-stop c2-mute></span>
+            <div class="mpc-time mpc-right">
+                <span c2-time="current">00:00</span>
+                <span class="mpc-time-sep" aria-hidden="true">/</span>
                 <span c2-duration>00:00</span>
             </div>
         </div>

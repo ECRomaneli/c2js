@@ -124,15 +124,15 @@
 
 .mm-row > button[c2-play] {
     background-size: 80% 80%;
-    background-image: url(../assets/icons/white/play-solid.svg);
+    background-image: url(assets/icons/white/play-solid.svg);
 }
 
 .mm-row > button[c2-play=true] {
-    background-image: url(../assets/icons/white/pause-solid.svg);
+    background-image: url(assets/icons/white/pause-solid.svg);
 }
 
 .mm-row > button[c2-loading=true] {
-    background-image: url(../assets/icons/white/spinner-solid.svg);
+    background-image: url(assets/icons/white/spinner-solid.svg);
     -webkit-animation: rotating 2s linear infinite;
     -moz-animation: rotating 2s linear infinite;
     -ms-animation: rotating 2s linear infinite;
@@ -141,31 +141,31 @@
 }
 
 .mm-row > button[c2-move^='-'] {
-    background-image: url(../assets/icons/white/backward-solid.svg);
+    background-image: url(assets/icons/white/backward-solid.svg);
 }
 
 .mm-row > button[c2-move^='+'] {
-    background-image: url(../assets/icons/white/forward-solid.svg);
+    background-image: url(assets/icons/white/forward-solid.svg);
 }
 
 .mm-row > button[c2-mute] {
-    background-image: url(../assets/icons/white/volume-mute-solid.svg);
+    background-image: url(assets/icons/white/volume-mute-solid.svg);
 }
 
 .mm-row > button[c2-volume^='-'] {
-    background-image: url(../assets/icons/white/volume-down-solid.svg);
+    background-image: url(assets/icons/white/volume-down-solid.svg);
 }
 
 .mm-row > button[c2-volume^='+'] {
-    background-image: url(../assets/icons/white/volume-up-solid.svg);
+    background-image: url(assets/icons/white/volume-up-solid.svg);
 }
 
 .mm-row > button[c2-fullscreen] {
-    background-image: url(../assets/icons/white/expand-solid.svg);
+    background-image: url(assets/icons/white/expand-solid.svg);
 }
 
 .mm-row > button[c2-fullscreen=true] {
-    background-image: url(../assets/icons/white/compress-solid.svg);
+    background-image: url(assets/icons/white/compress-solid.svg);
 }
 
 .mm-row > button[c2-fullscreen=null] {
@@ -173,11 +173,11 @@
 }
 
 .mm-row > button[c2-custom=menu] {
-    background-image: url(../assets/icons/white/th-solid.svg);
+    background-image: url(assets/icons/white/th-solid.svg);
 }
 
 .mm-row > button[c2-custom=back] {
     visibility: hidden;
-    background-image: url(../assets/icons/white/arrow-left-solid.svg);
+    background-image: url(assets/icons/white/arrow-left-solid.svg);
 }
 

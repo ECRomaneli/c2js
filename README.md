@@ -164,7 +164,9 @@ Ready-made themes live in [`templates/`](templates):
 | Template | Description |
 | --- | --- |
 | [`minimal`](templates/minimal) | Flexbox based overlay, touch friendly. |
+| [`minimal-modern`](templates/minimal-modern) | Modern mobile-first overlay: CSS-only toggle, glass controls and large tap targets. |
 | [`mpc-hc`](templates/mpc-hc) | Media Player Classic inspired bar. |
+| [`mpc-modern`](templates/mpc-modern) | Modern take on the MPC bar: dark glass panel, accent controls and the same layout. |
 | [`youtube`](templates/youtube) | Desktop YouTube style: hover chrome, red progress bar and keyboard shortcuts. |
 | [`mpc-hc (with original theme)`](templates/mpc-hc%20(with%20original%20theme)) | Same layout with the original MPC toolbar sprite. |
 
