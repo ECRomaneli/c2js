@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../dist/web/c2.css" type="text/css" />
+<script type="text/javascript" src="../../dist/web/c2.js"></script>
+<script>c2js('[c2js]', { saveTime: true })</script>
+
+<!-- C2 Theme -->
+<link rel="stylesheet" href="style.css" type="text/css" />
+
+
+<div c2js id="youtube-player" class="yt-player" c2-hide-mouse="3000">
+    <div class="yt-surface" c2-play>
+        <video class="yt-video" src="../assets/sample.mp4"></video>
+    </div>
+
+    <button class="yt-big-play" type="button" c2-play c2-shortcuts="space k" aria-label="Play"></button>
+    <div class="yt-spinner" c2-loading aria-hidden="true"></div>
+
+    <div class="yt-chrome">
+        <div class="yt-top">
+            <span class="yt-title">Big Buck Bunny — c2js YouTube theme</span>
+        </div>
+
+        <div class="yt-bottom">
+            <div class="yt-progress">
+                <input class="yt-seek" c2-time-seek type="range" aria-label="Seek">
+            </div>
+
+            <div class="yt-controls">
+                <button class="yt-btn yt-play" type="button" c2-play aria-label="Play"></button>
+                <button class="yt-btn yt-next" type="button" c2-custom="next" aria-label="Next"></button>
+
+                <div class="yt-volume">
+                    <button class="yt-btn yt-mute" type="button" c2-mute c2-shortcuts="m" aria-label="Mute"></button>
+                    <input class="yt-volume-seek" c2-volume-seek type="range" aria-label="Volume">
+                </div>
+
+                <div class="yt-time">
+                    <span c2-time="current" c2-null>0:00</span>
+                    <span class="yt-time-slash">/</span>
+                    <span c2-duration>0:00</span>
+                </div>
+
+                <div class="yt-spacer"></div>
+
+                <button class="yt-btn yt-settings" type="button" c2-custom="settings" aria-label="Settings"></button>
+                <button class="yt-btn yt-miniplayer" type="button" c2-custom="miniplayer" aria-label="Miniplayer"></button>
+                <button class="yt-btn yt-theater" type="button" c2-custom="theater" aria-label="Theater mode"></button>
+                <button class="yt-btn yt-fullscreen" type="button" c2-fullscreen c2-shortcuts="f enter dblclick" aria-label="Full screen"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard only controls -->
+    <button class="yt-hotkey" type="button" tabindex="-1" c2-move="-5" c2-shortcuts="arrowleft" aria-hidden="true"></button>
+    <button class="yt-hotkey" type="button" tabindex="-1" c2-move="+5" c2-shortcuts="arrowright" aria-hidden="true"></button>
+    <button class="yt-hotkey" type="button" tabindex="-1" c2-move="-10" c2-shortcuts="j" aria-hidden="true"></button>
+    <button class="yt-hotkey" type="button" tabindex="-1" c2-move="+10" c2-shortcuts="l" aria-hidden="true"></button>
+    <button class="yt-hotkey" type="button" tabindex="-1" c2-volume="-10%" c2-shortcuts="arrowdown" aria-hidden="true"></button>
+    <button class="yt-hotkey" type="button" tabindex="-1" c2-volume="+10%" c2-shortcuts="arrowup" aria-hidden="true"></button>
+</div>

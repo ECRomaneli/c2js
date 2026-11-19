@@ -1,0 +1,211 @@
+/*
+ * MPC-HC theme, ported from templates/mpc-hc/style.css.
+ *
+ * The C2JS version styles by attribute value: [c2-play=true] means playing.
+ * Video.js reflects state the same way, with data attributes:
+ * [data-paused] means paused, so some selectors are inverted.
+ */
+
+.c2js {
+    position: relative;
+    display: block;
+    background-color: black;
+}
+
+.c2js video {
+    display: block;
+    width: 100%;
+}
+
+.c2-bar {
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    opacity: 0;
+    cursor: default;
+}
+
+/* Keep the bar up while something inside it holds keyboard focus. */
+.c2-bar:hover,
+.c2-bar:has(:focus-visible) {
+    opacity: 1;
+}
+
+.c2-controls {
+    background-color: #f8f8f8;
+    overflow: hidden;
+    height: 56px;
+    padding: 6px 12px 0;
+}
+
+.c2-group {
+    display: block;
+}
+
+.c2-btn {
+    display: inline-block;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    vertical-align: middle;
+
+    background-repeat: no-repeat;
+    background-size: 100% 65%;
+    background-position: center;
+}
+
+.c2-info-bar {
+    background-color: #000;
+    color: #fff;
+    font-family: monospace, helvetica, sans-serif;
+    font-size: 12px;
+    display: block;
+    padding: 3px 8px;
+}
+
+.c2-divider, .c2-align-right {
+    display: inline-block;
+}
+
+.c2-divider {
+    width: 1px;
+    height: 32px;
+    background: gray;
+    position: absolute;
+}
+
+.c2-align-right {
+    float: right;
+}
+
+/* --- Sliders -----------------------------------------------------------
+ * C2JS reuses <input type="range">, which the browser styles for free.
+ * Video.js sliders are composed elements, so the track, fill, buffer and
+ * thumb each need rules. More markup, but a buffered-range bar comes with it.
+ */
+
+.c2-time-seek {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 20px;
+    width: 100%;
+    cursor: pointer;
+}
+
+.c2-volume-seek {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    width: 100px;
+    height: 20px;
+    margin-left: 4px;
+    cursor: pointer;
+}
+
+.c2-track {
+    position: relative;
+    width: 100%;
+    height: 6px;
+    background: #c9c9c9;
+    border: 1px solid #a0a0a0;
+}
+
+.c2-buffer, .c2-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.c2-buffer {
+    width: var(--media-slider-buffer);
+    background: #a8c8e8;
+}
+
+.c2-fill {
+    width: var(--media-slider-fill);
+    background: #3a7bd5;
+}
+
+.c2-thumb {
+    position: absolute;
+    left: var(--media-slider-fill);
+    width: 10px;
+    height: 16px;
+    background: #f0f0f0;
+    border: 1px solid #707070;
+    translate: -50% 0;
+}
+
+/* --- Icons ------------------------------------------------------------- */
+
+.c2-play {
+    background-image: url(../assets/icons/pause-solid.svg);
+}
+
+/* Inverted against C2JS: data-paused is present while paused. */
+.c2-play[data-paused] {
+    background-image: url(../assets/icons/play-solid.svg);
+}
+
+.c2-stop {
+    background-image: url(../assets/icons/stop-solid.svg);
+}
+
+.c2-seek[data-direction='backward'] {
+    background-image: url(../assets/icons/backward-solid.svg);
+}
+
+.c2-seek[data-direction='forward'] {
+    background-image: url(../assets/icons/forward-solid.svg);
+}
+
+.c2-mute {
+    background-image: url(../assets/icons/volume-up-solid.svg);
+}
+
+.c2-mute[data-muted] {
+    background-image: url(../assets/icons/volume-mute-solid.svg);
+}
+
+.c2-fullscreen {
+    background-image: url(../assets/icons/expand-solid.svg);
+}
+
+.c2-fullscreen[data-fullscreen] {
+    background-image: url(../assets/icons/compress-solid.svg);
+}
+
+/* C2JS marks unsupported fullscreen with [c2-fullscreen=null] and dims it.
+   Video.js applies the native `hidden` attribute instead, so this only has
+   to cover the available-but-disabled case. */
+.c2-fullscreen[data-disabled] {
+    opacity: .3;
+}
+
+/* --- Status line ------------------------------------------------------- */
+
+.c2-status[data-status='loading']::after {
+    content: "Loading...";
+}
+
+.c2-status[data-status='paused']::after {
+    content: "Paused";
+}
+
+.c2-status[data-status='stopped']::after {
+    content: "Stopped";
+}
+
+.c2-status[data-status='playing']::after {
+    content: "Playing";
+}
+
+.c2-status[data-muted]::before {
+    content: "[MUTED] ";
+}

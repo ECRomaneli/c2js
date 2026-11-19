@@ -1,17 +1,70 @@
 {
     "name": "c2js",
-    "version": "1.0.0",
-    "description": "Custom Control Javascript",
-    "main": "main.js",
-    "scripts": {
-        "build": "bash build.sh",
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
+    "version": "0.0.0-dev",
+    "description": "Dependency-free media control framework that turns plain HTML attributes into custom HTML5 video and audio controls.",
+    "keywords": [
+        "html5",
+        "video",
+        "audio",
+        "media",
+        "player",
+        "controls",
+        "custom-controls",
+        "typescript"
+    ],
     "author": "ECRomaneli",
-    "devDependencies": {
-        "express": "^4.16.3",
-        "typescript": "^3.1.6",
-        "uglify-js": "^3.4.9"
+    "license": "MIT",
+    "homepage": "https://github.com/ECRomaneli/c2js#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ECRomaneli/c2js.git"
     },
-    "license": "MIT"
+    "bugs": {
+        "url": "https://github.com/ECRomaneli/c2js/issues"
+    },
+    "type": "module",
+    "main": "./dist/module/index.cjs",
+    "module": "./dist/module/index.mjs",
+    "types": "./dist/module/index.d.ts",
+    "unpkg": "./dist/web/c2.min.js",
+    "jsdelivr": "./dist/web/c2.min.js",
+    "exports": {
+        ".": {
+            "types": "./dist/module/index.d.ts",
+            "import": "./dist/module/index.mjs",
+            "require": "./dist/module/index.cjs"
+        },
+        "./c2.css": "./dist/module/c2.css",
+        "./web": "./dist/web/c2.min.js",
+        "./package.json": "./package.json"
+    },
+    "sideEffects": [
+        "./dist/web/*",
+        "*.css"
+    ],
+    "files": [
+        "dist/module",
+        "dist/web",
+        "src",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build": "node scripts/build.mjs",
+        "build:module": "node scripts/build.mjs module",
+        "build:web": "node scripts/build.mjs web",
+        "typecheck": "tsc --noEmit",
+        "test": "node --test test/*.test.mjs",
+        "serve": "node scripts/serve.mjs",
+        "prepublishOnly": "npm run build",
+        "pretest": "node scripts/build.mjs"
+    },
+    "devDependencies": {
+        "@types/node": "^24.10.1",
+        "esbuild": "^0.28.2",
+        "typescript": "^5.9.3"
+    },
+    "engines": {
+        "node": ">=20"
+    }
 }

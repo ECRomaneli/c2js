@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags: ['[0-9]+.[0-9]+.[0-9]+*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          # Tags in this repo carry no prefix (0.1.0, 0.2.0). The strip is only
+          # a guard: the trigger above does not match a "v" tag anyway.
+          VERSION="${TAG#v}"
+
+          # Accept semver, optionally with a prerelease/build suffix: 1.2.3, 1.2.3-a, 1.2.3-rc.1
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$'; then
+            echo "::error::tag '$TAG' is not a valid semver tag (expected X.Y.Z[-suffix])"
+            exit 1
+          fi
+
+          # The tag is the single source of truth, so package.json is never bumped by hand.
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+          case "$VERSION" in
+            *-*) PRERELEASE=true ;;
+            *)   PRERELEASE=false ;;
+          esac
+
+          {
+            echo "tag=$TAG"
+            echo "version=$VERSION"
+            echo "prerelease=$PRERELEASE"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Releasing $TAG (version $VERSION, prerelease=$PRERELEASE)"
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Package artifacts
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          mkdir -p release
+          zip -r "release/c2js-$TAG-module.zip" dist/module
+          zip -r "release/c2js-$TAG-web.zip" dist/web
+          zip -r "release/c2js-$TAG-templates.zip" templates
+          cp dist/web/c2.js dist/web/c2.min.js dist/web/c2.css release/
+          npm pack --pack-destination release
+          (cd release && sha256sum * > SHA256SUMS.txt)
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2js-release
+          path: release
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: release/*

@@ -1,0 +1,347 @@
+/* -------------------------------------------------------------------------
+ * YouTube theme for C2JS
+ *
+ * Layout mirrors the desktop YouTube player: a hover chrome with a red
+ * progress bar, a control row with play/next/volume/time and the right side
+ * action buttons. Everything is plain markup + CSS on top of the c2-* controls;
+ * the played/volume fills use the native range accent color.
+ * ---------------------------------------------------------------------- */
+
+.yt-player {
+    --yt-red: #ff0000;
+
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    color: #fff;
+    font-family: "Roboto", "Arial", "Helvetica Neue", sans-serif;
+    font-size: 13px;
+    overflow: hidden;
+    outline: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.yt-player[c2-status~="fullscreen"] {
+    max-width: none;
+    margin: 0;
+    aspect-ratio: auto;
+}
+
+/* --- Media ------------------------------------------------------------- */
+
+/* The click surface owns c2-play so clicks on the video toggle playback.
+   Putting it here instead of on <video> keeps double-click fullscreen working. */
+.yt-surface {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.yt-video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+    outline: none;
+}
+
+/* --- Chrome (auto hiding overlay) -------------------------------------- */
+
+.yt-chrome {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .2s ease, visibility 0s linear .2s;
+}
+
+/* Controls stay visible while paused, or while the pointer is over the player. */
+.yt-player:not([c2-status~="play"]) .yt-chrome,
+.yt-player:hover .yt-chrome {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity .2s ease;
+}
+
+.yt-top {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    padding: 14px 16px 44px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, .65), rgba(0, 0, 0, 0));
+    pointer-events: none;
+}
+
+.yt-title {
+    display: block;
+    overflow: hidden;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.25;
+    text-shadow: 0 0 4px rgba(0, 0, 0, .6);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.yt-bottom {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 0 12px 4px;
+    background: linear-gradient(to top,
+        rgba(0, 0, 0, .86) 0%,
+        rgba(0, 0, 0, .5) 45%,
+        rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
+}
+
+/* --- Progress bar ------------------------------------------------------ */
+
+.yt-progress {
+    display: flex;
+    align-items: center;
+    height: 16px;
+    padding: 0 2px;
+    pointer-events: auto;
+}
+
+.yt-seek {
+    width: 100%;
+    height: 16px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    cursor: pointer;
+    accent-color: var(--yt-red);
+    color-scheme: dark;
+}
+
+/* --- Control row ------------------------------------------------------- */
+
+.yt-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 40px;
+    pointer-events: none;
+}
+
+.yt-spacer {
+    flex: 1;
+}
+
+.yt-btn {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent center / 24px 24px no-repeat;
+    color: inherit;
+    cursor: pointer;
+    opacity: .92;
+    pointer-events: auto;
+    transition: opacity .1s ease, background-color .1s ease, transform .1s ease;
+}
+
+.yt-btn:hover {
+    background-color: rgba(255, 255, 255, .1);
+    opacity: 1;
+}
+
+.yt-btn:active {
+    transform: scale(.9);
+}
+
+.yt-btn:focus-visible,
+.yt-big-play:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, .8);
+    outline-offset: -2px;
+}
+
+.yt-play {
+    background-image: url(icons/play.svg);
+    background-size: 26px 26px;
+}
+
+.yt-player[c2-status~="play"] .yt-play {
+    background-image: url(icons/pause.svg);
+}
+
+.yt-next { background-image: url(icons/next.svg); }
+.yt-settings { background-image: url(icons/settings.svg); background-size: 22px 22px; }
+.yt-miniplayer { background-image: url(icons/miniplayer.svg); background-size: 22px 22px; }
+.yt-theater { background-image: url(icons/theater.svg); background-size: 22px 22px; }
+
+.yt-fullscreen { background-image: url(icons/fullscreen.svg); }
+
+.yt-fullscreen[c2-fullscreen="true"] {
+    background-image: url(icons/fullscreen-exit.svg);
+}
+
+.yt-fullscreen[c2-fullscreen="null"] {
+    display: none;
+}
+
+/* --- Volume ------------------------------------------------------------ */
+
+.yt-volume {
+    display: flex;
+    align-items: center;
+    height: 40px;
+    pointer-events: auto;
+}
+
+.yt-mute {
+    background-image: url(icons/volume-high.svg);
+}
+
+.yt-mute[c2-mute="true"] {
+    background-image: url(icons/volume-mute.svg);
+}
+
+.yt-volume-seek {
+    width: 0;
+    height: 16px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    opacity: 0;
+    cursor: pointer;
+    pointer-events: auto;
+    accent-color: #fff;
+    color-scheme: dark;
+    transition: width .15s ease, opacity .15s ease, margin .15s ease;
+}
+
+.yt-volume:hover .yt-volume-seek,
+.yt-volume:focus-within .yt-volume-seek {
+    width: 64px;
+    margin-right: 8px;
+    opacity: 1;
+}
+
+/* --- Time -------------------------------------------------------------- */
+
+.yt-time {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 10px;
+    font-size: 12px;
+    line-height: 1;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, .9);
+    pointer-events: none;
+}
+
+.yt-time-slash {
+    opacity: .7;
+}
+
+/* --- Big play button and spinner --------------------------------------- */
+
+.yt-big-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    width: 68px;
+    height: 48px;
+    margin: -24px 0 0 -34px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: rgba(20, 20, 20, .78) url(icons/play.svg) center / 34px 34px no-repeat;
+    cursor: pointer;
+    opacity: 1;
+    transition: background-color .2s ease, opacity .2s ease, transform .1s ease;
+}
+
+.yt-big-play:hover {
+    background-color: rgba(255, 0, 0, .9);
+}
+
+.yt-big-play:active {
+    transform: scale(.95);
+}
+
+.yt-player[c2-status~="play"] .yt-big-play,
+.yt-player[c2-status~="loading"] .yt-big-play {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.yt-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 4;
+    width: 52px;
+    height: 52px;
+    margin: -26px 0 0 -26px;
+    background: url(icons/spinner.svg) center / contain no-repeat;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.yt-spinner[c2-loading="true"] {
+    opacity: 1;
+    animation: yt-spin .9s linear infinite;
+}
+
+@keyframes yt-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --- Keyboard only controls -------------------------------------------- */
+
+.yt-hotkey {
+    display: none;
+}
+
+/* --- Responsive / touch ------------------------------------------------- */
+
+@media (hover: none) {
+    .yt-volume-seek {
+        width: 64px;
+        margin-right: 8px;
+        opacity: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .yt-title {
+        font-size: 15px;
+    }
+
+    .yt-btn {
+        width: 36px;
+        height: 36px;
+        background-size: 22px 22px;
+    }
+
+    .yt-settings,
+    .yt-miniplayer,
+    .yt-theater {
+        display: none;
+    }
+}
