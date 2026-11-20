@@ -67,6 +67,7 @@ export class Player implements PlayerApi, StatusOwner {
     private readonly storage: StorageAccessor | null
     private readonly keys: StorageKeys
     private lastSecond = -1
+    private timeUpdateTimer: ReturnType<typeof setInterval> | null = null
 
     public constructor(el: Query | HTMLElement | string, config?: Config, onReady?: OnReady) {
         const $element = el instanceof Query ? el : new Query(el, document, void 0)
@@ -124,6 +125,7 @@ export class Player implements PlayerApi, StatusOwner {
 
     /** Detaches the player from its container. */
     public destroy(): void {
+        this.stopTimeUpdateLoop()
         delete (this.element as unknown as Dict)['c2js']
     }
 
@@ -138,12 +140,33 @@ export class Player implements PlayerApi, StatusOwner {
      * dozens of times per second by `timeupdate`.
      */
     private bindSecondUpdates(): void {
-        this.$media.on('timeupdate', () => {
-            const second = Math.floor(this.media.currentTime)
-            if (second === this.lastSecond) { return }
-            this.lastSecond = second
-            this.$media.trigger('stimeupdate')
-        })
+        this.$media.on('timeupdate seeked', () => { this.emitSecondUpdate() })
+        this.$media.on('play playing', () => { this.startTimeUpdateLoop() })
+        this.$media.on('pause ended error', () => { this.stopTimeUpdateLoop() })
+
+        if (!this.media.paused) { this.startTimeUpdateLoop() }
+    }
+
+    private emitSecondUpdate(): void {
+        const second = Math.floor(this.media.currentTime)
+        if (second === this.lastSecond) { return }
+        this.lastSecond = second
+        this.$media.trigger('stimeupdate')
+    }
+
+    /**
+     * Some TV engines, such as webOS, stop delivering `timeupdate` while the
+     * media plays. Polling keeps `stimeupdate` flowing without it.
+     */
+    private startTimeUpdateLoop(): void {
+        if (this.timeUpdateTimer !== null || this.media.paused) { return }
+        this.timeUpdateTimer = setInterval(() => { this.emitSecondUpdate() }, 250)
+    }
+
+    private stopTimeUpdateLoop(): void {
+        if (this.timeUpdateTimer === null) { return }
+        clearInterval(this.timeUpdateTimer)
+        this.timeUpdateTimer = null
     }
 
     private initControls(): void {

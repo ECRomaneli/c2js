@@ -186,7 +186,9 @@
 .mm-footer > input[c2-time-seek]::-webkit-slider-runnable-track {
     height: 4px;
     border-radius: 2px;
-    background: linear-gradient(to right,
+    /* Opaque base: the translucent stops composite over it, not the UA track. */
+    background-color: #1a1a1a;
+    background-image: linear-gradient(to right,
         #fff 0 var(--c2-played, 0%),
         rgba(255, 255, 255, .45) var(--c2-played, 0%) var(--c2-buffer, 0%),
         rgba(255, 255, 255, .15) var(--c2-buffer, 0%) 100%);
@@ -200,7 +202,8 @@
 .mm-footer > input[c2-time-seek]::-moz-range-track {
     height: 4px;
     border-radius: 2px;
-    background: linear-gradient(to right,
+    background-color: #1a1a1a;
+    background-image: linear-gradient(to right,
         rgba(255, 255, 255, .45) 0 var(--c2-buffer, 0%),
         rgba(255, 255, 255, .15) var(--c2-buffer, 0%) 100%);
 }

@@ -116,7 +116,9 @@
 .mpc-seek::-webkit-slider-runnable-track {
     height: 4px;
     border-radius: 2px;
-    background: linear-gradient(to right,
+    /* Opaque base: the translucent stops composite over it, not the UA track. */
+    background-color: #1a1a1a;
+    background-image: linear-gradient(to right,
         var(--mpc-accent) 0 var(--c2-played, 0%),
         rgba(255, 255, 255, .3) var(--c2-played, 0%) var(--c2-buffer, 0%),
         rgba(255, 255, 255, .12) var(--c2-buffer, 0%) 100%);
@@ -130,7 +132,8 @@
 .mpc-seek::-moz-range-track {
     height: 4px;
     border-radius: 2px;
-    background: linear-gradient(to right,
+    background-color: #1a1a1a;
+    background-image: linear-gradient(to right,
         rgba(255, 255, 255, .3) 0 var(--c2-buffer, 0%),
         rgba(255, 255, 255, .12) var(--c2-buffer, 0%) 100%);
 }

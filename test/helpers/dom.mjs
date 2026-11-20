@@ -163,6 +163,11 @@ class FakeMedia extends FakeNode {
         this.emit('timeupdate')
     }
 
+    /** Advances the position without emitting `timeupdate`, like some TV engines. */
+    advanceSilently(value) {
+        this.#currentTime = Math.min(this.duration, Math.max(0, Number(value) || 0))
+    }
+
     play() {
         this.paused = false
         this.played = true

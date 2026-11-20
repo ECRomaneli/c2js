@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { afterEach, beforeEach, test } from 'node:test'
+import { afterEach, beforeEach, mock, test } from 'node:test'
 
 import { BufferedRanges, buildPlayer, click, keydown, setupDom } from './helpers/dom.mjs'
 
@@ -301,13 +301,15 @@ test('c2-null elements reflect status without reacting to clicks', () => {
     const { container, media, elements } = buildPlayer(dom.document, { play: '' })
     elements.play.setAttribute('c2-null', '')
 
-    new Player(container, { saveWith: 'none' })
+    const player = new Player(container, { saveWith: 'none' })
 
     click(elements.play)
     assert.equal(media.paused, true)
 
     media.play()
     assert.equal(elements.play.getAttribute('c2-play'), 'true')
+
+    player.destroy()
 })
 
 test('focus is redirected to the container', () => {
@@ -332,6 +334,73 @@ test('stimeupdate fires only once per second', () => {
 
     media.currentTime = 2.1
     assert.equal(count, 2)
+})
+
+test('stimeupdate keeps firing while playing without timeupdate', () => {
+    mock.timers.enable({ apis: ['setInterval'] })
+
+    try {
+        const { container, media } = buildPlayer(dom.document, { time: 'current' })
+        const player = new Player(container, { saveWith: 'none' })
+
+        let count = 0
+        media.addEventListener('stimeupdate', () => { count++ })
+
+        media.play()
+        media.advanceSilently(1.2)
+        mock.timers.tick(250)
+        assert.equal(count, 1)
+
+        media.advanceSilently(1.9)
+        mock.timers.tick(250)
+        assert.equal(count, 1)
+
+        media.advanceSilently(2.1)
+        mock.timers.tick(250)
+        assert.equal(count, 2)
+
+        player.destroy()
+        media.advanceSilently(3.1)
+        mock.timers.tick(250)
+        assert.equal(count, 2)
+    } finally {
+        mock.timers.reset()
+    }
+})
+
+test('the time fallback does not run while paused', () => {
+    mock.timers.enable({ apis: ['setInterval'] })
+
+    try {
+        const { container, media } = buildPlayer(dom.document, { time: 'current' })
+        const player = new Player(container, { saveWith: 'none' })
+
+        let count = 0
+        media.addEventListener('stimeupdate', () => { count++ })
+
+        media.advanceSilently(1.2)
+        mock.timers.tick(250)
+        assert.equal(count, 0)
+
+        player.destroy()
+    } finally {
+        mock.timers.reset()
+    }
+})
+
+test('time-seek follows stimeupdate', () => {
+    const { container, media } = buildPlayer(dom.document, {})
+    const seek = dom.document.createElement('input')
+    seek.setAttribute('c2-time-seek', '')
+    container.appendChild(seek)
+
+    new Player(container, { saveWith: 'none' })
+
+    media.advanceSilently(40)
+    media.emit('stimeupdate')
+
+    assert.equal(Number(seek.value), 40)
+    assert.equal(seek.style['--c2-played'], '40.0%')
 })
 
 test('volume and mute are persisted and restored', () => {

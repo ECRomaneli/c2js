@@ -232,7 +232,7 @@ export const CONTROLS: ControlDefinition[] = [
             'mouseup touchend': (ctx) => { ctx.state.seeking = false }
         },
         media: {
-            'loadeddata timeupdate seeked': (ctx) => {
+            'loadeddata timeupdate stimeupdate seeked': (ctx) => {
                 if (ctx.state.seeking) { return }
                 ctx.$all.each((_, el) => {
                     const target = el as HTMLElement

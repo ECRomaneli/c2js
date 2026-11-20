@@ -42,6 +42,8 @@ for (const file of ['c2.js', 'c2.min.js']) {
         click(elements.play)
         assert.equal(media.paused, false)
         assert.equal(container.getAttribute('c2-status'), 'play')
+
+        container.c2js.destroy()
     })
 
     test(`${file} passes each player to onReady`, () => {
