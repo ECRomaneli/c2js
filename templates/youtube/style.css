@@ -117,7 +117,8 @@
         rgba(0, 0, 0, .86) 0%,
         rgba(0, 0, 0, .5) 45%,
         rgba(0, 0, 0, 0) 100%);
-    pointer-events: none;
+    /* Swallow clicks so they do not reach the c2-play surface behind the bar. */
+    pointer-events: auto;
 }
 
 /* --- Progress bar ------------------------------------------------------ */
@@ -141,6 +142,36 @@
     cursor: pointer;
     accent-color: var(--yt-red);
     color-scheme: dark;
+}
+
+/* Played and buffered segments come from c2-time-seek (--c2-played) and
+   c2-buffer (--c2-buffer). The unfilled part is the remaining gradient stop. */
+.yt-seek::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right,
+        var(--yt-red) 0 var(--c2-played, 0%),
+        rgba(255, 255, 255, .4) var(--c2-played, 0%) var(--c2-buffer, 0%),
+        rgba(255, 255, 255, .15) var(--c2-buffer, 0%) 100%);
+}
+
+/* The native thumb is top-aligned to the 4px track box, so nudge it back. */
+.yt-seek::-webkit-slider-thumb {
+    margin-top: -6px;
+}
+
+.yt-seek::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right,
+        rgba(255, 255, 255, .4) 0 var(--c2-buffer, 0%),
+        rgba(255, 255, 255, .15) var(--c2-buffer, 0%) 100%);
+}
+
+.yt-seek::-moz-range-progress {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--yt-red);
 }
 
 /* --- Control row ------------------------------------------------------- */

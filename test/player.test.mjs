@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, test } from 'node:test'
 
-import { buildPlayer, click, keydown, setupDom } from './helpers/dom.mjs'
+import { BufferedRanges, buildPlayer, click, keydown, setupDom } from './helpers/dom.mjs'
 
 let dom
 let Player
@@ -179,6 +179,58 @@ test('loading control follows the buffering events', () => {
     assert.equal(elements.loading.getAttribute('c2-loading'), 'false')
 })
 
+test('buffer control publishes the buffered percentage', () => {
+    const { container, media, elements } = buildPlayer(dom.document, { buffer: '' })
+    new Player(container, { saveWith: 'none' })
+
+    media.buffered = new BufferedRanges([[0, 40]])
+    media.emit('progress')
+
+    assert.equal(elements.buffer.getAttribute('c2-buffer'), '40')
+    assert.equal(elements.buffer.style['--c2-buffer'], '40.0%')
+})
+
+test('buffer control follows the range that holds the current time', () => {
+    const { container, media, elements } = buildPlayer(dom.document, { buffer: '' })
+    new Player(container, { saveWith: 'none' })
+
+    media.buffered = new BufferedRanges([[0, 30], [60, 100]])
+
+    media.currentTime = 10
+    media.emit('progress')
+    assert.equal(elements.buffer.getAttribute('c2-buffer'), '30')
+
+    media.currentTime = 70
+    media.emit('progress')
+    assert.equal(elements.buffer.getAttribute('c2-buffer'), '100')
+})
+
+test('buffer control stays at zero without ranges or a finite duration', () => {
+    const { container, media, elements } = buildPlayer(dom.document, { buffer: '' })
+    new Player(container, { saveWith: 'none' })
+
+    media.emit('progress')
+    assert.equal(elements.buffer.getAttribute('c2-buffer'), '0')
+
+    media.duration = Infinity
+    media.buffered = new BufferedRanges([[0, 40]])
+    media.emit('progress')
+    assert.equal(elements.buffer.getAttribute('c2-buffer'), '0')
+})
+
+test('buffer control clears when the source is emptied', () => {
+    const { container, media, elements } = buildPlayer(dom.document, { buffer: '' })
+    new Player(container, { saveWith: 'none' })
+
+    media.buffered = new BufferedRanges([[0, 40]])
+    media.emit('progress')
+    assert.equal(elements.buffer.getAttribute('c2-buffer'), '40')
+
+    media.buffered = new BufferedRanges()
+    media.emit('emptied')
+    assert.equal(elements.buffer.getAttribute('c2-buffer'), '0')
+})
+
 test('time-seek gets defaults and syncs both ways', () => {
     const { container, media } = buildPlayer(dom.document, {})
     const seek = dom.document.createElement('input')
@@ -192,10 +244,32 @@ test('time-seek gets defaults and syncs both ways', () => {
 
     media.currentTime = 25
     assert.equal(Number(seek.value), 25)
+    assert.equal(seek.style['--c2-played'], '25.0%')
 
     seek.value = '50'
     seek.dispatchEvent(new globalThis.CustomEvent('change', { bubbles: true }))
     assert.equal(media.currentTime, 50)
+    assert.equal(seek.style['--c2-played'], '50.0%')
+})
+
+test('time-seek follows the thumb while the user is dragging', () => {
+    const { container, media } = buildPlayer(dom.document, {})
+    const seek = dom.document.createElement('input')
+    seek.setAttribute('c2-time-seek', '')
+    container.appendChild(seek)
+
+    new Player(container, { saveWith: 'none' })
+
+    media.currentTime = 50
+    assert.equal(seek.style['--c2-played'], '50.0%')
+
+    seek.dispatchEvent(new globalThis.CustomEvent('mousedown', { bubbles: true }))
+    seek.value = '10'
+    seek.dispatchEvent(new globalThis.CustomEvent('input', { bubbles: true }))
+    media.emit('timeupdate')
+
+    // The media event is ignored during the drag, but the fill moves at once.
+    assert.equal(seek.style['--c2-played'], '10.0%')
 })
 
 test('shortcuts trigger the matching control', () => {

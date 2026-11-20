@@ -120,6 +120,17 @@ class Style {
     getPropertyValue(name) { return this[name] ?? '' }
 }
 
+/** Stands in for the native `TimeRanges` of `media.buffered`. */
+class BufferedRanges {
+    #ranges = []
+
+    constructor(ranges = []) { this.#ranges = ranges }
+
+    get length() { return this.#ranges.length }
+    start(index) { return this.#ranges[index][0] }
+    end(index) { return this.#ranges[index][1] }
+}
+
 class FakeMedia extends FakeNode {
     #volume = 1
     #currentTime = 0
@@ -133,6 +144,7 @@ class FakeMedia extends FakeNode {
         this.readyState = 4
         this.playbackRate = 1
         this.played = false
+        this.buffered = new BufferedRanges()
     }
 
     get currentSrc() { return this.getAttribute('src') ?? '' }
@@ -296,4 +308,4 @@ export function keydown(el, key) {
     return event
 }
 
-export { FakeEvent }
+export { BufferedRanges, FakeEvent }

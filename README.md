@@ -84,6 +84,7 @@ single element can carry several of them.
 | `c2-time-seek` | – | `<input type="range">` bound to the playback position. |
 | `c2-volume-seek` | – | `<input type="range">` bound to the volume. |
 | `c2-loading` | – | Gets `c2-loading="true"` while buffering. |
+| `c2-buffer` | – | Gets the buffered percentage (0–100) and publishes it as `--c2-buffer`. |
 | `c2-status` | – | Mirrors the player status list, for styling. |
 | `c2-hide-mouse` | `3000`, `2s` | Hides the cursor over this element after the given idle time. |
 | `c2-shortcuts` | `space f left dblclick` | Keys that trigger this control. |
@@ -99,6 +100,45 @@ active states, so CSS can drive the whole appearance:
 [c2js][c2-status~="play"]       .my-play-button { background-image: url(pause.svg); }
 [c2js][c2-status~="fullscreen"] .my-controls    { font-size: 1.5rem; }
 [c2-loading="true"]                             { animation: spin 1s linear infinite; }
+```
+
+### Buffered track
+
+`c2-buffer` writes how much of the media is already downloaded, both as the `c2-buffer`
+attribute and as the `--c2-buffer` custom property. `c2-time-seek` publishes the played
+position as `--c2-played`, so the native range can paint both segments with plain CSS:
+
+```html
+<input class="progress" c2-time-seek c2-buffer type="range">
+```
+
+```css
+.progress::-webkit-slider-runnable-track {
+    background: linear-gradient(to right,
+        red 0 var(--c2-played, 0%),
+        rgba(255, 255, 255, .4) var(--c2-played, 0%) var(--c2-buffer, 0%),
+        rgba(255, 255, 255, .15) var(--c2-buffer, 0%) 100%);
+}
+
+.progress::-moz-range-track {
+    background: linear-gradient(to right,
+        rgba(255, 255, 255, .4) 0 var(--c2-buffer, 0%),
+        rgba(255, 255, 255, .15) var(--c2-buffer, 0%) 100%);
+}
+
+.progress::-moz-range-progress { background: red; }
+```
+
+The percentage follows the buffered range that holds the current position, so seeking into
+a gap reports the segment ahead and not the total downloaded. The value is also usable on
+its own element:
+
+```html
+<div class="my-buffer" c2-buffer></div>
+```
+
+```css
+.my-buffer { width: var(--c2-buffer, 0%); }
 ```
 
 ### Shortcuts

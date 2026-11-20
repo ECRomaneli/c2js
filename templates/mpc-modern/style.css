@@ -111,6 +111,36 @@
     margin-bottom: 8px;
 }
 
+/* Played and buffered segments: c2-time-seek publishes --c2-played and
+   c2-buffer publishes --c2-buffer. */
+.mpc-seek::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right,
+        var(--mpc-accent) 0 var(--c2-played, 0%),
+        rgba(255, 255, 255, .3) var(--c2-played, 0%) var(--c2-buffer, 0%),
+        rgba(255, 255, 255, .12) var(--c2-buffer, 0%) 100%);
+}
+
+/* The native thumb is top-aligned to the 4px track box, so nudge it back. */
+.mpc-seek::-webkit-slider-thumb {
+    margin-top: -6px;
+}
+
+.mpc-seek::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right,
+        rgba(255, 255, 255, .3) 0 var(--c2-buffer, 0%),
+        rgba(255, 255, 255, .12) var(--c2-buffer, 0%) 100%);
+}
+
+.mpc-seek::-moz-range-progress {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--mpc-accent);
+}
+
 .mpc-volume {
     flex: none;
     width: 96px;

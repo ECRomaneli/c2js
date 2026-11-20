@@ -55,12 +55,52 @@ function seekRatio(el: HTMLElement, ctx: ControlContext): number {
     return parseFloat(ctx.$(el).attr('max') ?? '100') || 100
 }
 
+/**
+ * End of the buffered range that holds the current position, as a percentage
+ * of the duration. Seeks into a gap fall back to the furthest buffered end.
+ */
+function bufferedPercent(media: HTMLMediaElement): number {
+    const ranges = media.buffered
+    const duration = media.duration
+
+    if (!ranges || !ranges.length || !Number.isFinite(duration) || duration <= 0) { return 0 }
+
+    const time = media.currentTime
+    let end = 0
+
+    for (let i = 0; i < ranges.length; i++) {
+        if (ranges.start(i) <= time && time <= ranges.end(i)) {
+            end = ranges.end(i)
+            break
+        }
+    }
+
+    if (!end) { end = ranges.end(ranges.length - 1) }
+
+    return minMaxVal(end / duration * 100, 0, 100)
+}
+
 export const CONTROLS: ControlDefinition[] = [
     {
         name: 'loading',
         media: {
             'loadstart seeking waiting': (ctx) => { ctx.$all.data('loading', true) },
             'canplay error': (ctx) => { ctx.$all.data('loading', false) }
+        }
+    },
+
+    {
+        name: 'buffer',
+        media: {
+            'loadeddata durationchange progress seeked emptied': (ctx) => {
+                ctx.$all.each((_, el) => {
+                    const percent = bufferedPercent(ctx.media)
+                    const $el = ctx.$(el as HTMLElement)
+
+                    $el.data('buffer', Math.round(percent * 10) / 10)
+                    $el.css('--c2-buffer', percent.toFixed(1) + '%')
+                })
+            }
         }
     },
 
@@ -174,12 +214,16 @@ export const CONTROLS: ControlDefinition[] = [
                     .attrIfNotExists('step', 0.1)
                     .attrIfNotExists('max', 100)
                     .val(0)
+                    .css('--c2-played', '0%')
             })
         },
         events: {
             'input change': (ctx, el) => {
                 const max = seekRatio(el, ctx)
                 const value = parseFloat(ctx.$(el).val() ?? '0') || 0
+
+                ctx.$(el).css('--c2-played', (value / max * 100).toFixed(1) + '%')
+
                 if (Number.isFinite(ctx.media.duration)) {
                     ctx.media.currentTime = ctx.media.duration * value / max
                 }
@@ -191,9 +235,14 @@ export const CONTROLS: ControlDefinition[] = [
             'loadeddata timeupdate seeked': (ctx) => {
                 if (ctx.state.seeking) { return }
                 ctx.$all.each((_, el) => {
-                    const max = seekRatio(el as HTMLElement, ctx)
+                    const target = el as HTMLElement
+                    const max = seekRatio(target, ctx)
                     const value = ctx.media.currentTime * max / ctx.media.duration
-                    ctx.$(el as HTMLElement).val(Number.isFinite(value) ? value : 0)
+                    const played = Number.isFinite(value) ? value : 0
+
+                    ctx.$(target)
+                        .val(played)
+                        .css('--c2-played', (played / max * 100).toFixed(1) + '%')
                 })
             }
         }
